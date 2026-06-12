@@ -146,8 +146,12 @@ async function loadSession() {
       if (nicknameInput) nicknameInput.value = userHabits.nickname;
     }
   } else {
-    // Force onboarding habits questionnaire if registering new profile
-    document.getElementById('habits-overlay').style.display = 'flex';
+    // Force onboarding habits questionnaire if registering new profile AND not in Him Mode
+    if (isHimMode) {
+      document.getElementById('habits-overlay').style.display = 'none';
+    } else {
+      document.getElementById('habits-overlay').style.display = 'flex';
+    }
   }
 
   renderDashboard();
@@ -336,6 +340,11 @@ async function submitHabitsProfile() {
 
 // --- 1. DASHBOARD ---
 function renderDashboard() {
+  if (isHimMode) {
+    renderHimDashboard();
+    return;
+  }
+
   const userDisp = userHabits.nickname || ((activeUser && activeUser !== 'Offline Guest') ? activeUser : 'sweet sister');
   const nameEl = document.getElementById('dash-user-name');
   if (nameEl) nameEl.innerText = userDisp;
@@ -365,6 +374,176 @@ function renderDashboard() {
 
   renderSymptomHeatmap();
   syncDashboardCyclePhase();
+}
+
+function renderHimDashboard() {
+  const partnerToken = localStorage.getItem('sakhi_partner_token');
+  const nameEl = document.getElementById('dash-user-name');
+  const welcomeText = document.querySelector('.welcome-banner p');
+  
+  if (nameEl) {
+    nameEl.innerText = "Support Partner 🙋‍♂️";
+  }
+  
+  // Show partner sync info at top of dashboard
+  const partnerRow = document.getElementById('partner-id-display-row');
+  if (partnerRow) {
+    partnerRow.style.display = 'block';
+    partnerRow.style.color = 'var(--rose)';
+    if (partnerToken) {
+      partnerRow.innerHTML = `
+        🔗 Synced Partner: <strong style="color: var(--plum); text-transform: uppercase;">${partnerToken}</strong> 
+        | <span style="cursor: pointer; text-decoration: underline; color: #D32F2F;" onclick="disconnectPartner()">Disconnect Sync</span>
+      `;
+    } else {
+      partnerRow.innerHTML = `
+        🔒 Partner logs locked. <span style="cursor: pointer; text-decoration: underline; color: var(--rose); font-weight: 700;" onclick="showPage('cycle')">Link Partner ID</span> to view period forecasts.
+      `;
+    }
+  }
+
+  // Hide water glass container from view in Him Mode and instead show a "How to Care for Her" card
+  const waterCard = document.querySelector('.card-water');
+  if (waterCard) {
+    waterCard.style.minHeight = '180px';
+    const badge = waterCard.querySelector('.card-badge');
+    if (badge) badge.innerText = "Care Action Guide";
+    
+    // Custom recommendation message based on phase
+    let actionHtml = "";
+    if (partnerToken && sessionData.cycles && sessionData.cycles.length > 0) {
+      const lastCycle = sessionData.cycles[sessionData.cycles.length - 1];
+      const lastStart = new Date(lastCycle.startDate);
+      const today = new Date();
+      const diffTime = Math.abs(today - lastStart);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) % (lastCycle.cycleLength || 28);
+      
+      const partnerName = userHabits.nickname || "partner";
+      if (diffDays <= 5) {
+        actionHtml = `
+          <h4 style="color: var(--rose); margin-bottom: 0.5rem;">Cramp & Pain Comfort 🧴</h4>
+          <p style="font-size: 0.82rem; line-height: 1.4; color: var(--charcoal);">
+            ${partnerName} is in her menstrual phase. Help her by preparing a **Castor Oil pack** or a **warm heating bag** for her lower back. Keep a **cramp roll-on** handy and avoid planning heavy physical outings.
+          </p>
+        `;
+      } else if (diffDays <= 13) {
+        actionHtml = `
+          <h4 style="color: var(--sage); margin-bottom: 0.5rem;">Nourish & Active Walk 🏃‍♀️</h4>
+          <p style="font-size: 0.82rem; line-height: 1.4; color: var(--charcoal);">
+            ${partnerName} is in her follicular phase. Her estrogen is rising! Encourage her to have **fresh green moong sprouts** and join her for a **brisk 30-minute outdoor walk** to improve insulin sensitivity.
+          </p>
+        `;
+      } else if (diffDays <= 17) {
+        actionHtml = `
+          <h4 style="color: var(--gold); margin-bottom: 0.5rem;">Zinc Support & Outing ✨</h4>
+          <p style="font-size: 0.82rem; line-height: 1.4; color: var(--charcoal);">
+            ${partnerName} is in her ovulation phase. Her energy is at its peak. Encourage her to eat **zinc-rich seeds (like pumpkin or sunflower)**. Great time to plan a fun date or outdoor exercise!
+          </p>
+        `;
+      } else {
+        actionHtml = `
+          <h4 style="color: var(--plum); margin-bottom: 0.5rem;">Reduce Cortisol & Spearmint Tea ☕</h4>
+          <p style="font-size: 0.82rem; line-height: 1.4; color: var(--charcoal);">
+            ${partnerName} is in her PMS week. She might feel bloated. Brew her a cup of **warm spearmint tea** around 5:30 PM, reduce salt in dinner to prevent water retention, and help her wind down to sleep by 10:30 PM.
+          </p>
+        `;
+      }
+    } else {
+      actionHtml = `
+        <h4 style="color: var(--rose); margin-bottom: 0.5rem;">Intimate Partner Sync</h4>
+        <p style="font-size: 0.82rem; line-height: 1.4; color: var(--charcoal);">
+          Link your partner's ID to unlock customized care protocols. In the meantime, learn about Ayurvedic herbs (like Shatavari) in the **Ayurvedic Engine** tab.
+        </p>
+      `;
+    }
+    
+    // Replace inner structure of waterCard
+    if (!waterCard.dataset.originalHtml) {
+      waterCard.dataset.originalHtml = waterCard.innerHTML;
+    }
+    
+    waterCard.innerHTML = `
+      <span class="card-badge">Care Action Guide</span>
+      <div style="margin-top: 0.5rem; display: flex; flex-direction: column; justify-content: center; height: 100%;">
+        ${actionHtml}
+      </div>
+    `;
+  }
+
+  // Update Cycle Card
+  const cycleCard = document.querySelector('.card-cycle');
+  if (cycleCard) {
+    const badge = cycleCard.querySelector('.card-badge');
+    if (badge) badge.innerText = "Her Current Phase";
+    
+    const phaseTitle = document.getElementById('dash-phase-name');
+    const phaseDesc = document.getElementById('dash-phase-details');
+    
+    if (!partnerToken) {
+      phaseTitle.innerText = "Partner Sync Locked 🔒";
+      phaseDesc.innerText = "Please link your partner's Sync ID to view her active cycle phase and symptom predictions.";
+      if (welcomeText) {
+        welcomeText.innerText = "Thank you for being here to support your partner. Link her ID to synchronize calendars and customize care guidelines.";
+      }
+    } else if (!sessionData.cycles || sessionData.cycles.length === 0) {
+      phaseTitle.innerText = "No cycle data logged yet 🌸";
+      phaseDesc.innerText = "Your partner hasn't logged her cycle dates yet. Ask her to log them in her app so you can sync here.";
+      if (welcomeText) {
+        const partnerName = userHabits.nickname || "partner";
+        welcomeText.innerText = `Connected with ${partnerName}. Once she logs her periods in her app, her cycles will sync here immediately!`;
+      }
+    } else {
+      const lastCycle = sessionData.cycles[sessionData.cycles.length - 1];
+      const lastStart = new Date(lastCycle.startDate);
+      const today = new Date();
+      const diffTime = Math.abs(today - lastStart);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) % (lastCycle.cycleLength || 28);
+      
+      const partnerName = userHabits.nickname || "partner";
+      if (welcomeText) {
+        welcomeText.innerText = `Currently supporting ${partnerName} 🌸. Her logs and habits are synced below. Review her daily cycle phase details to care for her.`;
+      }
+      
+      let phase = "";
+      let details = "";
+      
+      if (diffDays <= 5) {
+        phase = "Menstrual Phase (Day 1-5) 🌸";
+        details = `She is on Day ${diffDays + 1}. Her estrogen is low. Assist her by cooking warm, iron-rich meals (like spinach dal) and preparing hot ginger tea.`;
+      } else if (diffDays <= 13) {
+        phase = "Follicular Phase (Day 6-13) 🌿";
+        details = `She is on Day ${diffDays + 1}. Her estrogen is rising. She has higher physical energy. Encourage her to eat sprouts and healthy fats (flaxseeds).`;
+      } else if (diffDays <= 17) {
+        phase = "Ovulation Phase (Day 14-17) ✨";
+        details = `She is on Day ${diffDays + 1}. She is in her peak fertility window. Offer her high-nutrient seeds. Great time to plan dates!`;
+      } else {
+        phase = "Luteal / PMS Phase (Day 18-28) 🌙";
+        details = `She is on Day ${diffDays + 1}. Progesterone peaks. PMS might cause mood variations or bloating. Prepare spearmint tea and support her bedtime by 10:30 PM.`;
+      }
+
+      phaseTitle.innerText = phase;
+      phaseDesc.innerText = details;
+    }
+  }
+
+  // Update Streak Card
+  const streakCard = document.querySelector('.card-streak');
+  if (streakCard) {
+    const badge = streakCard.querySelector('.card-badge');
+    if (badge) badge.innerText = "Sync Status";
+    
+    const scoreVal = streakCard.querySelector('.streak-score');
+    if (scoreVal) {
+      scoreVal.innerHTML = partnerToken ? `<span style="color: var(--sage);">Connected</span>` : `<span style="color: var(--soft);">Pending Link</span>`;
+    }
+    
+    const desc = streakCard.querySelector('p');
+    if (desc) {
+      desc.innerText = partnerToken ? "Dynamic connection active. Ovarian cycles are synced directly from her secure cloud database." : "Logs are kept completely offline until you link her partner ID.";
+    }
+  }
+
+  renderSymptomHeatmap();
 }
 
 function syncDashboardCyclePhase() {
@@ -1764,6 +1943,13 @@ function toggleForHimMode() {
     btn.style.background = "";
     btn.style.color = "";
     
+    // Restore water/hydration card if hidden
+    const waterCard = document.querySelector('.card-water');
+    if (waterCard && waterCard.dataset.originalHtml) {
+      waterCard.innerHTML = waterCard.dataset.originalHtml;
+      waterCard.removeAttribute('data-original-html');
+    }
+
     // Restore any hidden privacy content
     const privatePages = ['cycle', 'mental', 'breast', 'checker'];
     privatePages.forEach(pId => {
