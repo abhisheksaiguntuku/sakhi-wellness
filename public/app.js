@@ -156,6 +156,7 @@ async function loadSession() {
 
   renderDashboard();
   personalizeGreetings();
+  configureSidebarForGender();
 }
 
 function personalizeGreetings() {
@@ -1978,6 +1979,7 @@ function toggleForHimMode() {
     btn.style.background = "#E8526A";
     btn.style.color = "white";
     
+    configureSidebarForGender();
     showForHimDashboard();
   } else {
     document.body.classList.remove('him-mode');
@@ -2002,6 +2004,7 @@ function toggleForHimMode() {
       }
     });
     
+    configureSidebarForGender();
     showPage('dashboard');
   }
 }
@@ -2824,6 +2827,47 @@ function renderTrainerExercise() {
 function switchTrainerExercise(exName) {
   currentTrainerExercise = exName;
   renderTrainerExercise();
+}
+
+// Hide/Show and rename sidebar links dynamically based on Male/Female mode
+function configureSidebarForGender() {
+  const himPages = ['dashboard', 'remedies', 'diet', 'comfort', 'doctor'];
+  document.querySelectorAll('.sidebar-btn').forEach(btn => {
+    const pageId = btn.getAttribute('data-page');
+    if (!pageId) return; // ignore footer buttons
+    
+    if (isHimMode) {
+      if (himPages.includes(pageId)) {
+        btn.style.display = 'flex';
+        // Customize text for Him Mode
+        if (pageId === 'dashboard') btn.innerHTML = "🙋‍♂️ Partner Care Dashboard";
+        if (pageId === 'remedies') btn.innerHTML = "🌿 Ayurvedic Care for Her";
+        if (pageId === 'diet') btn.innerHTML = "🍽️ Cook / Diet for Her";
+        if (pageId === 'comfort') btn.innerHTML = "🌸 Soothing & Yoga Guide";
+        if (pageId === 'doctor') btn.innerHTML = "👩‍⚕️ Find Gynecologists for Her";
+      } else {
+        btn.style.display = 'none';
+      }
+    } else {
+      btn.style.display = 'flex';
+      // Restore default text for Her Mode
+      if (pageId === 'dashboard') btn.innerHTML = "🌸 Dashboard";
+      if (pageId === 'checker') btn.innerHTML = "🔬 Symptom Checker";
+      if (pageId === 'remedies') btn.innerHTML = "🌿 Ayurvedic Engine";
+      if (pageId === 'diet') btn.innerHTML = "🍽️ Smart Diet";
+      if (pageId === 'cycle') btn.innerHTML = "📅 Cycle Tracker";
+      if (pageId === 'comfort') btn.innerHTML = "🌸 Pain Comfort Lounge";
+      if (pageId === 'sleep') btn.innerHTML = "🌙 Sleep Tracker";
+      if (pageId === 'mental') btn.innerHTML = "🧠 Mood & Mind";
+      if (pageId === 'breast') btn.innerHTML = "🎗️ Breast Health";
+      if (pageId === 'trainer') btn.innerHTML = "💪 Personal Trainer";
+      if (pageId === 'ml') btn.innerHTML = "🔬 Report Explainer";
+      if (pageId === 'community') btn.innerHTML = "👩‍👩‍👧 Community Forum";
+      if (pageId === 'education') btn.innerHTML = "🎓 Education Hub";
+      if (pageId === 'risk') btn.innerHTML = "🧬 Genetic Risk";
+      if (pageId === 'doctor') btn.innerHTML = "👩‍⚕️ Doctors Near Me";
+    }
+  });
 }
 
 
