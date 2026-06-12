@@ -50,87 +50,87 @@ const CommunitySchema = new mongoose.Schema({
   relates: { type: Number, default: 0 }
 });
 
-let UserModel, SessionModel, CommunityModel;
+const UserModel = mongoose.model('User', UserSchema);
+const SessionModel = mongoose.model('Session', SessionSchema);
+const CommunityModel = mongoose.model('Community', CommunitySchema);
 
-if (MONGODB_URI) {
-  mongoose.connect(MONGODB_URI)
-    .then(() => {
-      console.log("Connected to MongoDB successfully! 🍃");
-      useMongo = true;
-      UserModel = mongoose.model('User', UserSchema);
-      SessionModel = mongoose.model('Session', SessionSchema);
-      CommunityModel = mongoose.model('Community', CommunitySchema);
-    })
-    .catch(err => {
-      console.warn("MongoDB connection failed, falling back to local JSON database. Error:", err.message);
-      setupJsonDb();
-    });
-} else {
-  console.log("No MONGODB_URI configured. Running local JSON file database.");
-  setupJsonDb();
+let isConnected = false;
+let connectingPromise = null;
+
+async function connectDb() {
+  if (isConnected) return true;
+  if (!MONGODB_URI) {
+    useMongo = false;
+    return false;
+  }
+  if (connectingPromise) {
+    return connectingPromise;
+  }
+
+  connectingPromise = mongoose.connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000
+  })
+  .then(() => {
+    console.log("Connected to MongoDB successfully! 🍃");
+    useMongo = true;
+    isConnected = true;
+    return true;
+  })
+  .catch(err => {
+    console.warn("MongoDB connection failed, falling back to in-memory database. Error:", err.message);
+    useMongo = false;
+    isConnected = false;
+    connectingPromise = null;
+    return false;
+  });
+
+  return connectingPromise;
 }
 
-// 2. MOCKED JSON FALLBACK LAYER
+// 2. MOCKED IN-MEMORY FALLBACK LAYER
+const defaultCommunity = [
+  {
+    id: "seed-1",
+    author: "Ananya",
+    time: "2 hours ago",
+    content: "Anyone else have chest hair from PCOD? You're not alone. I used to be so embarrassed, but spearmint tea and clean diet have started making a difference. Stay strong, sisters! 🌸",
+    tags: ["PCOD", "Lifestyle"],
+    relates: 24
+  },
+  {
+    id: "seed-2",
+    author: "Ritu",
+    time: "5 hours ago",
+    content: "My period was missing for 3 months. I was super scared of going to the doctor, but my sister supported me. It turns out it was high stress + bad sleep. Setting a 10:30 PM sleeping goal helped reset it.",
+    tags: ["Periods", "Sleep"],
+    relates: 18
+  },
+  {
+    id: "seed-3",
+    author: "Aditi",
+    time: "Yesterday",
+    content: "PCOD diet that actually worked for me as a South Indian: Replacing white rice with red rice / brown rice, adding more dal, and avoiding coffee right before my periods.",
+    tags: ["Diet", "PCOD"],
+    relates: 32
+  }
+];
+
+let inMemoryDb = {
+  users: {},
+  sessions: {},
+  community: [...defaultCommunity]
+};
 
 function setupJsonDb() {
   useMongo = false;
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(DB_PATH)) {
-    const defaultData = {
-      users: {},
-      sessions: {},
-      community: [
-        {
-          id: "seed-1",
-          author: "Ananya",
-          time: "2 hours ago",
-          content: "Anyone else have chest hair from PCOD? You're not alone. I used to be so embarrassed, but spearmint tea and clean diet have started making a difference. Stay strong, sisters! 🌸",
-          tags: ["PCOD", "Lifestyle"],
-          relates: 24
-        },
-        {
-          id: "seed-2",
-          author: "Ritu",
-          time: "5 hours ago",
-          content: "My period was missing for 3 months. I was super scared of going to the doctor, but my sister supported me. It turns out it was high stress + bad sleep. Setting a 10:30 PM sleeping goal helped reset it.",
-          tags: ["Periods", "Sleep"],
-          relates: 18
-        },
-        {
-          id: "seed-3",
-          author: "Aditi",
-          time: "Yesterday",
-          content: "PCOD diet that actually worked for me as a South Indian: Replacing white rice with red rice / brown rice, adding more dal, and avoiding coffee right before my periods.",
-          tags: ["Diet", "PCOD"],
-          relates: 32
-        }
-      ]
-    };
-    fs.writeFileSync(DB_PATH, JSON.stringify(defaultData, null, 2), 'utf8');
-  }
 }
 
 function readDb() {
-  setupJsonDb();
-  try {
-    const data = fs.readFileSync(DB_PATH, 'utf8');
-    const db = JSON.parse(data);
-    if (!db.users) db.users = {};
-    if (!db.sessions) db.sessions = {};
-    return db;
-  } catch (err) {
-    console.error("Error reading database file, resetting:", err);
-    return { users: {}, sessions: {}, community: [] };
-  }
+  return inMemoryDb;
 }
 
 function writeDb(data) {
-  try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
-  } catch (err) {
-    console.error("Error writing to database:", err);
-  }
+  inMemoryDb = data;
 }
 
 // 3. DATABASE ACCESS INTERFACE (Supports Mongo + JSON Fallback)
@@ -330,6 +330,7 @@ async function relateToPost(postId) {
 }
 
 module.exports = {
+  connectDb,
   registerUser,
   loginUser,
   findOrCreateGoogleUser,

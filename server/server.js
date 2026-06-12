@@ -13,6 +13,16 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Middleware to ensure DB connection is established
+app.use(async (req, res, next) => {
+  try {
+    await db.connectDb();
+  } catch (err) {
+    console.error("DB connection middleware failed:", err);
+  }
+  next();
+});
+
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
