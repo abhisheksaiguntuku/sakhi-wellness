@@ -940,7 +940,12 @@
         <div class="doctor-search-card">
           <div class="form-group">
             <label>Enter Your City, Pincode, or Location</label>
-            <input type="text" id="doctor-region-select" placeholder="e.g. Pune, Noida, Chandigarh, Mumbai..." value="Delhi" onkeydown="if(event.key==='Enter') findLadyGynecologists()"/>
+            <div style="display: flex; gap: 0.5rem; width: 100%;">
+              <input type="text" id="doctor-region-select" placeholder="e.g. Pune, Noida, Chandigarh, Mumbai..." value="Delhi" onkeydown="if(event.key==='Enter') findLadyGynecologists()" style="flex: 1;"/>
+              <button id="detect-location-btn" class="btn-secondary" onclick="detectLocation()" style="padding: 0.75rem 1.2rem; font-size: 0.88rem; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; height: auto;">
+                📍 Detect Location
+              </button>
+            </div>
           </div>
           <button class="btn-primary" onclick="findLadyGynecologists()">Search Female Gynecologists</button>
         </div>

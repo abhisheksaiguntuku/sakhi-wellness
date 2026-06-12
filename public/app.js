@@ -1497,6 +1497,54 @@ async function calculateGeneticRisks() {
 }
 
 // --- 15. LADY GYNECOLOGIST FINDER ---
+async function detectLocation() {
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser.");
+    return;
+  }
+  
+  const detectBtn = document.getElementById('detect-location-btn');
+  const originalText = detectBtn.innerHTML;
+  detectBtn.innerHTML = "⌛ Detecting...";
+  detectBtn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+        const data = await response.json();
+        
+        // Extract city, town, village, or suburb name
+        const address = data.address;
+        const city = address.city || address.town || address.village || address.suburb || address.county || "";
+        
+        if (city) {
+          document.getElementById('doctor-region-select').value = city;
+          // Trigger search automatically
+          findLadyGynecologists();
+        } else {
+          alert("Could not identify the city name from coordinates. Please enter it manually!");
+        }
+      } catch (err) {
+        console.error("Reverse geocoding failed:", err);
+        alert("Unable to fetch city details from coordinates. Please enter manually.");
+      } finally {
+        detectBtn.innerHTML = originalText;
+        detectBtn.disabled = false;
+      }
+    },
+    (error) => {
+      console.warn("Geolocation permission error:", error);
+      alert("Location permission denied or unavailable. Please enter your location manually!");
+      detectBtn.innerHTML = originalText;
+      detectBtn.disabled = false;
+    },
+    { timeout: 10000 }
+  );
+}
+
 async function findLadyGynecologists() {
   const region = document.getElementById('doctor-region-select').value;
   const container = document.getElementById('lady-gynae-list');
