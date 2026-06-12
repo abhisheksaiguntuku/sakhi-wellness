@@ -52,7 +52,8 @@
   <!-- HABITS ONBOARDING OVERLAY -->
   <div id="habits-overlay" class="habits-overlay-backdrop" style="display: none;">
     <div class="habits-card">
-      <div class="auth-header">
+      <div class="auth-header" style="position: relative;">
+        <button onclick="document.getElementById('habits-overlay').style.display = 'none'" style="position: absolute; top: -5px; right: -5px; background: none; border: none; font-size: 1.8rem; cursor: pointer; color: var(--soft); line-height: 1; padding: 0.2rem;">×</button>
         <h2>Customize Your Companion 🌸</h2>
         <p>Tell us about your routines to automatically personalize your food, activity, and Ayurvedic checklist.</p>
       </div>
