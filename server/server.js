@@ -52,14 +52,14 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Google Identity Token Login route
 app.post('/api/auth/google', async (req, res) => {
-  const { credential } = req.body;
+  const { credential, gender } = req.body;
   if (!credential) return res.status(400).json({ error: "Google credential token required" });
   
   if (!googleClient) {
     console.warn("Google Client ID is not set. Mocking Google authentication for development.");
     // Fail-soft mock Google Authentication for development
-    const mockUser = await db.findOrCreateGoogleUser("mock-google-id-12345", "sister.care@sakhi.org", "Sweet Sister");
-    return res.json({ success: true, username: mockUser.username });
+    const mockUser = await db.findOrCreateGoogleUser("mock-google-id-12345", "sister.care@sakhi.org", "Sweet Sister", gender || 'female');
+    return res.json({ success: true, username: mockUser.username, gender: mockUser.gender || 'female' });
   }
 
   try {
@@ -72,8 +72,8 @@ app.post('/api/auth/google', async (req, res) => {
     const email = payload['email'];
     const name = payload['name'] || "Google User";
 
-    const user = await db.findOrCreateGoogleUser(googleId, email, name);
-    res.json({ success: true, username: user.username });
+    const user = await db.findOrCreateGoogleUser(googleId, email, name, gender || 'female');
+    res.json({ success: true, username: user.username, gender: user.gender || 'female' });
   } catch (err) {
     console.error("Google Auth error:", err);
     res.status(401).json({ error: "Google sign-in token verification failed" });

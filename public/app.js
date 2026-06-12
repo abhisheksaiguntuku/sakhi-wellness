@@ -199,12 +199,32 @@ function initializeGoogleSignIn() {
 }
 
 async function handleGoogleAuthCallback(googleResponse) {
-  const res = await apiCall('/api/auth/google', 'POST', { credential: googleResponse.credential });
+  let gender = 'female';
+  const genderSelect = document.getElementById('auth-gender');
+  if (genderSelect && currentAuthTab === 'signup') {
+    gender = genderSelect.value;
+  } else {
+    const isPartner = confirm("Signing in: Are you logging in as a Male Support Partner? (Click Cancel for Female/Her Mode)");
+    gender = isPartner ? 'male' : 'female';
+  }
+
+  const res = await apiCall('/api/auth/google', 'POST', { credential: googleResponse.credential, gender });
   if (res && res.success) {
     activeUser = res.username;
     userToken = res.username;
     localStorage.setItem('sakhi_auth_user', res.username);
     localStorage.setItem('sakhi_user_token', res.username);
+    
+    // Save account gender settings
+    const accountGender = res.gender || gender || 'female';
+    localStorage.setItem('sakhi_user_gender', accountGender);
+    
+    // Apply layout state
+    if (accountGender === 'male') {
+      isHimMode = true;
+    } else {
+      isHimMode = false;
+    }
     
     document.getElementById('auth-overlay').style.display = 'none';
     await loadSession();
@@ -1588,6 +1608,50 @@ async function calculateGeneticRisks() {
 }
 
 // --- 15. LADY GYNECOLOGIST FINDER ---
+async function detectOnboardLocation() {
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser.");
+    return;
+  }
+  
+  const detectBtn = document.getElementById('detect-onboard-location-btn');
+  const originalText = detectBtn.innerHTML;
+  detectBtn.innerHTML = "⌛...";
+  detectBtn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+        const data = await response.json();
+        const address = data.address;
+        const city = address.city || address.town || address.village || address.suburb || address.county || "";
+        
+        if (city) {
+          document.getElementById('onboard-location').value = city;
+        } else {
+          alert("Could not identify the city name from coordinates. Please enter it manually!");
+        }
+      } catch (err) {
+        console.error("Reverse geocoding failed:", err);
+        alert("Unable to fetch city details. Please enter manually.");
+      } finally {
+        detectBtn.innerHTML = originalText;
+        detectBtn.disabled = false;
+      }
+    },
+    (error) => {
+      console.warn("Geolocation permission error:", error);
+      alert("Location permission denied or unavailable.");
+      detectBtn.innerHTML = originalText;
+      detectBtn.disabled = false;
+    },
+    { timeout: 10000 }
+  );
+}
+
 async function detectLocation() {
   if (!navigator.geolocation) {
     alert("Geolocation is not supported by your browser.");

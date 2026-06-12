@@ -160,13 +160,13 @@ async function registerUser(username, password, gender = 'female', googleId = nu
   }
 }
 
-async function findOrCreateGoogleUser(googleId, email, name) {
+async function findOrCreateGoogleUser(googleId, email, name, gender = 'female') {
   const generatedUsername = name.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000);
   if (useMongo) {
     try {
       let user = await UserModel.findOne({ googleId });
       if (!user) {
-        user = new UserModel({ username: generatedUsername, googleId, email });
+        user = new UserModel({ username: generatedUsername, googleId, email, gender });
         await user.save();
         const session = new SessionModel({ username: generatedUsername });
         await session.save();
@@ -180,12 +180,12 @@ async function findOrCreateGoogleUser(googleId, email, name) {
     const db = readDb();
     let userKey = Object.keys(db.users).find(k => db.users[k].googleId === googleId);
     if (!userKey) {
-      db.users[generatedUsername] = { password: null, googleId, email, habits: null };
+      db.users[generatedUsername] = { password: null, googleId, email, gender, habits: null };
       db.sessions[generatedUsername] = { cycles: [], waterLogged: 0, waterStreak: 0, dailyStreak: 0, lastActiveDate: null, badges: [], checklist: {}, moodLogs: {}, journal: [] };
       writeDb(db);
       userKey = generatedUsername;
     }
-    return { username: userKey };
+    return { username: userKey, gender: db.users[userKey].gender };
   }
 }
 
