@@ -44,6 +44,11 @@ function showPage(pageId) {
     targetPage.classList.add('active');
   }
 
+  // Intimate Privacy Guard Check
+  if (checkPartnerPrivacy(pageId)) {
+    return;
+  }
+
   if (pageId === 'dashboard') {
     renderDashboard();
   } else if (pageId === 'remedies') {
@@ -69,12 +74,13 @@ function showPage(pageId) {
 }
 
 // API request client
-async function apiCall(endpoint, method = 'GET', body = null) {
+async function apiCall(endpoint, method = 'GET', body = null, overrideToken = null) {
+  const tokenToUse = overrideToken || (isHimMode ? (localStorage.getItem('sakhi_partner_token') || 'anonymous-default') : userToken);
   const options = {
     method,
     headers: {
       'Content-Type': 'application/json',
-      'X-User-Token': userToken
+      'X-User-Token': tokenToUse
     }
   };
   if (body) {
@@ -97,10 +103,12 @@ async function loadSession() {
 
   if (userToken === 'anonymous-default') {
     document.getElementById('auth-overlay').style.display = 'flex';
+    document.getElementById('logout-btn').style.display = 'none';
     return;
   }
   
   document.getElementById('auth-overlay').style.display = 'none';
+  document.getElementById('logout-btn').style.display = 'inline-block';
   document.getElementById('user-display-tag').innerText = `Logged in: ${activeUser}`;
 
   // Fetch session logs
@@ -225,6 +233,7 @@ function skipAuth() {
   activeUser = 'Offline Guest';
   userToken = 'guest-' + Math.random().toString(36).substr(2, 5);
   document.getElementById('auth-overlay').style.display = 'none';
+  document.getElementById('logout-btn').style.display = 'inline-block';
   document.getElementById('user-display-tag').innerText = "Offline Guest Profile";
   document.getElementById('habits-overlay').style.display = 'flex';
   renderDashboard();
@@ -279,6 +288,18 @@ function renderDashboard() {
       gl.classList.remove('active');
     }
   });
+
+  if (userToken && userToken !== 'anonymous-default' && !isHimMode) {
+    const displayRow = document.getElementById('partner-id-display-row');
+    const displayId = document.getElementById('partner-sync-id');
+    if (displayRow && displayId) {
+      displayRow.style.display = 'block';
+      displayId.innerText = `SAKHI-${userToken.toUpperCase()}`;
+    }
+  } else if (!isHimMode) {
+    const displayRow = document.getElementById('partner-id-display-row');
+    if (displayRow) displayRow.style.display = 'none';
+  }
 
   renderSymptomHeatmap();
   syncDashboardCyclePhase();
@@ -1622,8 +1643,135 @@ function toggleForHimMode() {
     btn.style.background = "";
     btn.style.color = "";
     
+    // Restore any hidden privacy content
+    const privatePages = ['cycle', 'mental', 'breast', 'checker'];
+    privatePages.forEach(pId => {
+      const pageEl = document.getElementById(`page-${pId}`);
+      if (pageEl && pageEl.dataset.originalHtml) {
+        pageEl.innerHTML = pageEl.dataset.originalHtml;
+        pageEl.removeAttribute('data-original-html');
+      }
+    });
+    
     showPage('dashboard');
   }
+}
+
+function showForHimDashboard() {
+  // Update welcome banner
+  const nameEl = document.getElementById('dash-user-name');
+  if (nameEl) nameEl.innerText = "Support Partner";
+  
+  const welcomeText = document.querySelector('.welcome-banner p');
+  if (welcomeText) {
+    welcomeText.innerText = "Thank you for being here to support your partner. Learn about periods, Ayurvedic teas, and daily mobility exercises.";
+  }
+  
+  // Show partner sync info at top of dashboard
+  const partnerToken = localStorage.getItem('sakhi_partner_token');
+  const partnerRow = document.getElementById('partner-id-display-row');
+  if (partnerRow) {
+    partnerRow.style.display = 'block';
+    partnerRow.style.color = 'var(--rose)';
+    if (partnerToken) {
+      partnerRow.innerHTML = `
+        🔗 Synced Partner: <strong style="color: var(--plum); text-transform: uppercase;">${partnerToken}</strong> 
+        | <span style="cursor: pointer; text-decoration: underline; color: #D32F2F;" onclick="disconnectPartner()">Disconnect Sync</span>
+      `;
+    } else {
+      partnerRow.innerHTML = `
+        🔒 Partner logs locked. <span style="cursor: pointer; text-decoration: underline; color: var(--rose); font-weight: 700;" onclick="showPage('cycle')">Link Partner ID</span> to view period forecasts.
+      `;
+    }
+  }
+
+  // Update initial bot bubble
+  const chatBox = document.getElementById('chat-box');
+  if (chatBox) {
+    chatBox.innerHTML = `
+      <div class="msg msg-bot">
+        <div class="msg-bubble">
+          Hello, support partner! I am Sakhi. Ask me how to make soothing teas, prepare warm heating pads, or support your partner during PMS swings. 🌸
+        </div>
+      </div>
+    `;
+  }
+}
+
+function checkPartnerPrivacy(pageId) {
+  const privatePages = ['cycle', 'mental', 'breast', 'checker'];
+  if (isHimMode && privatePages.includes(pageId) && !localStorage.getItem('sakhi_partner_token')) {
+    const pageEl = document.getElementById(`page-${pageId}`);
+    if (pageEl) {
+      if (!pageEl.dataset.originalHtml) {
+        pageEl.dataset.originalHtml = pageEl.innerHTML;
+      }
+      pageEl.innerHTML = `
+        <div class="privacy-lock-card" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1.5px solid var(--border); border-radius: 24px; padding: 4rem 2rem; text-align: center; max-width: 550px; margin: 3rem auto; box-shadow: var(--shadow);">
+          <span style="font-size: 3.5rem; display: block; margin-bottom: 1rem;">🔒</span>
+          <h3 style="font-family: var(--font-serif); color: var(--plum); margin-bottom: 0.75rem;">Intimate Sync Guard</h3>
+          <p style="color: var(--mid); font-size: 0.92rem; line-height: 1.6; margin-bottom: 2rem;">
+            Intimate diagnostics, journals, and period calendars are locked to protect her private space. 
+            Enter your partner's <strong>Partner Sync ID</strong> to link accounts and unlock shared tracking.
+          </p>
+          <div class="form-group" style="margin-bottom: 1.5rem; max-width: 380px; margin-left: auto; margin-right: auto;">
+            <input type="text" id="partner-id-input" placeholder="e.g. SAKHI-PRIYA123" style="text-align: center; font-weight: 600; text-transform: uppercase; font-size: 1.1rem; letter-spacing: 0.05em;"/>
+          </div>
+          <button class="btn-primary" onclick="connectPartner()" style="width: 100%; max-width: 380px; padding: 0.85rem;">Link Partner & Sync Logs</button>
+        </div>
+      `;
+    }
+    return true;
+  }
+  return false;
+}
+
+async function connectPartner() {
+  const inputVal = document.getElementById('partner-id-input').value.trim().toUpperCase();
+  if (!inputVal.startsWith('SAKHI-')) {
+    alert("Invalid ID format. Partner Sync IDs must start with 'SAKHI-'");
+    return;
+  }
+  const partnerUser = inputVal.substring(6).toLowerCase();
+  
+  const detectBtn = document.querySelector('.privacy-lock-card button');
+  const originalText = detectBtn.innerText;
+  detectBtn.innerText = "Connecting...";
+  detectBtn.disabled = true;
+
+  // Verify partner exists
+  const res = await apiCall('/api/session', 'GET', null, partnerUser);
+  if (res) {
+    localStorage.setItem('sakhi_partner_token', partnerUser);
+    alert(`Successfully synced with ${partnerUser}! Shared logs are now unlocked. 🌸`);
+    location.reload();
+  } else {
+    alert("Partner ID not found. Ensure your partner has logged in and registered their account!");
+    detectBtn.innerText = originalText;
+    detectBtn.disabled = false;
+  }
+}
+
+function disconnectPartner() {
+  localStorage.removeItem('sakhi_partner_token');
+  alert("Partner sync disconnected.");
+  location.reload();
+}
+
+function copyPartnerId() {
+  const syncId = document.getElementById('partner-sync-id').innerText;
+  navigator.clipboard.writeText(syncId).then(() => {
+    alert(`Partner Sync ID copied: ${syncId} 📋`);
+  });
+}
+
+function handleLogout() {
+  localStorage.removeItem('sakhi_auth_user');
+  localStorage.removeItem('sakhi_user_token');
+  localStorage.removeItem('sakhi_partner_token');
+  activeUser = null;
+  userToken = 'anonymous-default';
+  location.reload();
 }
 
 // --- 17. PERIOD PAIN YOGA & EXERCISES ---

@@ -104,6 +104,7 @@
     </div>
     <div class="nav-actions">
       <span id="user-display-tag" style="font-size: 0.82rem; margin-right: 1rem; color: var(--mid); font-weight: 500;">Guest Account</span>
+      <button id="logout-btn" class="nav-cta" onclick="handleLogout()" style="margin-right: 0.5rem; display: none; background: #FFEBEF; color: #D32F2F; border: 1px solid #FFCDD2;">🚪 Log Out</button>
       <button class="nav-cta" onclick="toggleForHimMode()" id="him-toggle-btn">🙋‍♂️ For Him Mode</button>
     </div>
   </nav>
@@ -143,6 +144,9 @@
         <div class="welcome-banner">
           <h1>Welcome back, <span id="dash-user-name">sweet sister</span>. 🌸</h1>
           <p>You are strong, beautiful, and in perfect tune with your body. Let's look at your daily logs.</p>
+          <p id="partner-id-display-row" style="font-size: 0.82rem; color: var(--rose); margin-top: 0.75rem; font-weight: 500; display: none;">
+            🌸 Partner Sync ID: <strong id="partner-sync-id" style="cursor: pointer; text-decoration: underline; background: var(--rose-pale); padding: 0.2rem 0.5rem; border-radius: 8px; border: 1px dashed var(--rose-light);" onclick="copyPartnerId()">SAKHI-XXXX</strong> (Share this with your partner to sync calendars)
+          </p>
         </div>
         
         <div class="dashboard-grid">
