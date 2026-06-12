@@ -221,6 +221,7 @@ app.post('/api/doubt', async (req, res) => {
   const mealsCount = parseInt(habits.meals) || 3;
 
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  const nickname = habits.nickname || 'sister';
 
   if (GROQ_API_KEY && GROQ_API_KEY !== 'YOUR_GROQ_API_KEY_HERE') {
     try {
@@ -237,11 +238,12 @@ app.post('/api/doubt', async (req, res) => {
               role: 'system',
               content: `You are Sakhi, a warm, caring, and knowledgeable AI women's health companion. Explain simply without complex jargon, like an older sister. Avoid prescribing medications, recommend natural/ayurvedic habits first.
 User profile:
+- Name/Nickname: ${nickname}
 - Age: ${habits.age} years old
 - Wakes up at: ${habits.wakeTime}
 - Sleeps at: ${habits.sleepTime}
 - Eat frequency: ${mealsCount} meals a day (${habits.foodPreference})
-Adopt your suggestions to these routines. Provide exact times they should perform tasks (like exercise or tea). Acknowledge details warm and end with hope.`
+Always address the user by their name/nickname ("${nickname}") warmly instead of calling them generic terms. Adopt your suggestions to these routines. Provide exact times they should perform tasks (like exercise or tea). Acknowledge details warm and end with hope.`
             },
             { role: 'user', content: question }
           ],
@@ -262,16 +264,16 @@ Adopt your suggestions to these routines. Provide exact times they should perfor
   const query = question.toLowerCase();
   
   if (query.includes("medicine") || query.includes("pill") || query.includes("tablet")) {
-    reply = `Sister, I notice you are asking about prescription medicines. As your health companion, I cannot recommend chemical drugs or dictate dosages. However, based on your lifestyle (sleeping around ${habits.sleepTime} and waking around ${habits.wakeTime}), natural remedies fit beautifully. For instance, taking Ashwagandha powder in warm milk 30 minutes before your bedtime (around ${sleepHr - 1}:30 PM) is a safe adaptogen that reduces cortisol. Let's start there, and if you need pills, let's connect you with a doctor. 🌸`;
+    reply = `${nickname}, I notice you are asking about prescription medicines. As your health companion, I cannot recommend chemical drugs or dictate dosages. However, based on your lifestyle (sleeping around ${habits.sleepTime} and waking around ${habits.wakeTime}), natural remedies fit beautifully. For instance, taking Ashwagandha powder in warm milk 30 minutes before your bedtime (around ${sleepHr - 1}:30 PM) is a safe adaptogen that reduces cortisol. Let's start there, and if you need pills, let's connect you with a doctor. 🌸`;
   } else if (query.includes("food") || query.includes("eat") || query.includes("diet")) {
-    reply = `Since you eat ${mealsCount} meals a day and prefer a ${habits.foodPreference} diet, here is a custom meal timing pattern:
+    reply = `Since you eat ${mealsCount} meals a day and prefer a ${habits.foodPreference} diet, here is a custom meal timing pattern for you, ${nickname}:
 - **First Meal (Breakfast)**: Have a high-protein breakfast within 1.5 hours of waking up (around ${wakeHr + 1}:00 AM). Moong sprouts or ragi malt are excellent.
 - **Midday (Lunch)**: Eat a rich green leaf salad and fiber-rich dal around 1:00 PM.
 - **Final Meal (Dinner)**: Make sure it's light and low in sodium, consumed at least 3 hours before your bedtime (around ${sleepHr - 3}:00 PM). Avoid white sugar completely to manage insulin resistance! 🍽️`;
   } else if (query.includes("exercise") || query.includes("workout") || query.includes("walk")) {
-    reply = `For your schedule, consistency is everything. Since you wake at ${habits.wakeTime}, we want to avoid high-intensity workouts immediately. Instead, do 10 minutes of gentle morning Yoga (like butterfly pose) around ${wakeHr}:30 AM. Later in the day, around 4:00 PM or 5:00 PM, add a 30-minute steady walk to lower insulin resistance. This is perfect for your routine and stabilizes blood sugar before dinner! 🧘`;
+    reply = `For your schedule, ${nickname}, consistency is everything. Since you wake at ${habits.wakeTime}, we want to avoid high-intensity workouts immediately. Instead, do 10 minutes of gentle morning Yoga (like butterfly pose) around ${wakeHr}:30 AM. Later in the day, around 4:00 PM or 5:00 PM, add a 30-minute steady walk to lower insulin resistance. This is perfect for your routine and stabilizes blood sugar before dinner! 🧘`;
   } else {
-    reply = `Here is a custom insight for you: Balancing PCOD is about matching daily steps to your circadian clock (waking at ${habits.wakeTime} and sleeping at ${habits.sleepTime}). Try drinking 2 cups of spearmint tea daily—one in the morning after breakfast, and one in the evening around 5 PM. It reduces face hair growth and balances androgens. You're doing amazing! 🌸`;
+    reply = `Here is a custom insight for you, ${nickname}: Balancing PCOD is about matching daily steps to your circadian clock (waking at ${habits.wakeTime} and sleeping at ${habits.sleepTime}). Try drinking 2 cups of spearmint tea daily—one in the morning after breakfast, and one in the evening around 5 PM. It reduces face hair growth and balances androgens. You're doing amazing! 🌸`;
   }
 
   res.json({ reply });

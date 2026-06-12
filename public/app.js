@@ -126,6 +126,34 @@ async function loadSession() {
   }
 
   renderDashboard();
+  personalizeGreetings();
+}
+
+function personalizeGreetings() {
+  const nickname = userHabits.nickname || 'sister';
+  
+  // 1. Initial chat bubble greeting
+  const chatBox = document.getElementById('chat-box');
+  if (chatBox) {
+    chatBox.innerHTML = `
+      <div class="msg msg-bot">
+        <div class="msg-bubble">
+          Namaste, ${nickname}! I am Sakhi. What questions or worries do you have today? We can talk about cramps, PCOD facial hair, periods, or emotional ups and downs. 🌸
+        </div>
+      </div>
+    `;
+  }
+  
+  // 2. Emergency Modal Title & Content
+  const emergencyTitle = document.querySelector('#emergency-modal h3');
+  if (emergencyTitle) {
+    emergencyTitle.innerHTML = `You are not alone, ${nickname}. 💛`;
+  }
+  
+  const emergencyDesc = document.querySelector('#emergency-modal p');
+  if (emergencyDesc) {
+    emergencyDesc.innerHTML = `What you are feeling is real and valid, ${nickname}. Ovarian stress and high cortisol levels often spike mood dips, anxiety, and tears. You do not have to fight this alone.`;
+  }
 }
 
 async function syncSessionState() {
@@ -229,6 +257,7 @@ async function submitHabitsProfile() {
   if (res && res.success) {
     document.getElementById('habits-overlay').style.display = 'none';
     renderDashboard();
+    personalizeGreetings();
     renderTrainerTimeline();
     findLadyGynecologists(); // Automatically fetch gynecologists near the new location
   }
