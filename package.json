@@ -1,0 +1,10 @@
+{
+  "name": "sakhi-workspace",
+  "version": "1.0.0",
+  "description": "Sakhi — Women's Health Companion",
+  "scripts": {
+    "setup": "npm install && cd server && npm install",
+    "start": "node server/server.js"
+  },
+  "dependencies": {}
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Sakhi — Your Women's Health Companion",
+  "short_name": "Sakhi",
+  "description": "An AI-powered health companion built exclusively for women.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDF8F5",
+  "theme_color": "#E8526A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/color/192/orchid.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://img.icons8.com/color/512/orchid.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

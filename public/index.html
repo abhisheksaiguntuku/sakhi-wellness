@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sakhi — Your Women's Health Companion</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css?v=5"/>
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json"/>
+  <!-- Google OAuth Services Client -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  
+  <!-- AUTH / LOGIN OVERLAY -->
+  <div id="auth-overlay" class="auth-overlay-backdrop">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>Welcome to Sakhi 🌸</h2>
+        <p>Register or log in to back up your diagnostics, logs, and streaks privately.</p>
+      </div>
+      <div class="auth-tabs">
+        <button id="tab-login-btn" class="auth-tab-btn active" onclick="switchAuthTab('login')">Log In</button>
+        <button id="tab-signup-btn" class="auth-tab-btn" onclick="switchAuthTab('signup')">Sign Up</button>
+      </div>
+      <div class="auth-body">
+        <div class="form-group">
+          <label>Username / Alias</label>
+          <input type="text" id="auth-username" placeholder="Write any alias to stay anonymous"/>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="auth-password" placeholder="Enter secure key"/>
+        </div>
+        <button class="btn-primary" style="width: 100%;" onclick="submitAuth()">Continue</button>
+        
+        <!-- Google OAuth Button container -->
+        <div id="google-login-container" style="margin-top: 1rem; display: flex; justify-content: center;"></div>
+
+        <button class="btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="skipAuth()">Skip (Use Temporary Offline Mode)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HABITS ONBOARDING OVERLAY -->
+  <div id="habits-overlay" class="habits-overlay-backdrop" style="display: none;">
+    <div class="habits-card">
+      <div class="auth-header">
+        <h2>Customize Your Companion 🌸</h2>
+        <p>Tell us about your routines to automatically personalize your food, activity, and Ayurvedic checklist.</p>
+      </div>
+      <div class="habits-form-body">
+        <div class="form-grid">
+          <div class="form-group" style="grid-column: span 2;">
+            <label>What should we call you? (Your Nickname)</label>
+            <input type="text" id="onboard-nickname" placeholder="e.g. Priya, Siya, Ananya..." value="sister"/>
+          </div>
+          <div class="form-group">
+            <label>What time do you usually wake up?</label>
+            <input type="time" id="onboard-wake" value="06:30"/>
+          </div>
+          <div class="form-group">
+            <label>What time do you sleep?</label>
+            <input type="time" id="onboard-sleep" value="22:30"/>
+          </div>
+          <div class="form-group">
+            <label>How many meals do you eat daily?</label>
+            <select id="onboard-meals">
+              <option value="2">2 Large Meals</option>
+              <option value="3" selected>3 Regular Meals</option>
+              <option value="4">4 Frequent Meals</option>
+              <option value="6">6 Small Portions</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Food Preference</label>
+            <select id="onboard-preference">
+              <option value="veg">Vegetarian 🌿</option>
+              <option value="egg">Veg + Eggs 🍳</option>
+              <option value="nonveg">Non-Vegetarian 🍗</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Age Group</label>
+            <input type="number" id="onboard-age" value="23" min="10" max="100"/>
+          </div>
+          <div class="form-group">
+            <label>Current Location / City</label>
+            <input type="text" id="onboard-location" placeholder="e.g. Delhi, Mumbai, Pune, Noida..." value="Delhi"/>
+          </div>
+        </div>
+        <button class="btn-primary" style="width: 100%; margin-top: 1rem;" onclick="submitHabitsProfile()">Tailor My Sakhi Companion</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV BAR -->
+  <nav id="navbar">
+    <div class="nav-brand">
+      <span class="nav-logo">Sakhi 🌸</span>
+      <span class="nav-subtitle">your wellness sister</span>
+    </div>
+    <div class="nav-actions">
+      <span id="user-display-tag" style="font-size: 0.82rem; margin-right: 1rem; color: var(--mid); font-weight: 500;">Guest Account</span>
+      <button class="nav-cta" onclick="toggleForHimMode()" id="him-toggle-btn">🙋‍♂️ For Him Mode</button>
+    </div>
+  </nav>
+
+  <!-- DASHBOARD WRAPPER -->
+  <div class="app-layout">
+    
+    <!-- SIDEBAR NAVIGATION -->
+        <aside class="sidebar">
+          <div class="sidebar-links">
+            <button class="sidebar-btn active" onclick="showPage('dashboard')" data-page="dashboard">🌸 Dashboard</button>
+            <button class="sidebar-btn" onclick="showPage('checker')" data-page="checker">🔬 Symptom Checker</button>
+            <button class="sidebar-btn" onclick="showPage('remedies')" data-page="remedies">🌿 Ayurvedic Engine</button>
+            <button class="sidebar-btn" onclick="showPage('diet')" data-page="diet">🍽️ Smart Diet</button>
+            <button class="sidebar-btn" onclick="showPage('cycle')" data-page="cycle">📅 Cycle Tracker</button>
+            <button class="sidebar-btn" onclick="showPage('comfort')" data-page="comfort">🌸 Pain Comfort Lounge</button>
+            <button class="sidebar-btn" onclick="showPage('sleep')" data-page="sleep">🌙 Sleep Tracker</button>
+            <button class="sidebar-btn" onclick="showPage('mental')" data-page="mental">🧠 Mood & Mind</button>
+            <button class="sidebar-btn" onclick="showPage('breast')" data-page="breast">🎗️ Breast Health</button>
+            <button class="sidebar-btn" onclick="showPage('trainer')" data-page="trainer">💪 Personal Trainer</button>
+            <button class="sidebar-btn" onclick="showPage('ml')" data-page="ml">🔬 Report Explainer</button>
+            <button class="sidebar-btn" onclick="showPage('community')" data-page="community">👩‍👩‍👧 Community Forum</button>
+            <button class="sidebar-btn" onclick="showPage('education')" data-page="education">🎓 Education Hub</button>
+            <button class="sidebar-btn" onclick="showPage('risk')" data-page="risk">🧬 Genetic Risk</button>
+            <button class="sidebar-btn" onclick="showPage('doctor')" data-page="doctor">🏥 Doctor Finder</button>
+          </div>
+      <div class="privacy-badge">
+        🔒 Completely Private & Anonymous
+      </div>
+    </aside>
+
+    <!-- MAIN VIEWS -->
+    <main class="content-view">
+      
+      <!-- 1. DASHBOARD PAGE -->
+      <section id="page-dashboard" class="page-view active">
+        <div class="welcome-banner">
+          <h1>Welcome back, <span id="dash-user-name">sweet sister</span>. 🌸</h1>
+          <p>You are strong, beautiful, and in perfect tune with your body. Let's look at your daily logs.</p>
+        </div>
+        
+        <div class="dashboard-grid">
+          <!-- Cycle Status Card -->
+          <div class="dash-card card-cycle">
+            <span class="card-badge">Current Phase</span>
+            <h3 id="dash-phase-name">Loading Cycle...</h3>
+            <p id="dash-phase-details">Log your periods in the tracker to see cycle syncing parameters.</p>
+            <div class="mini-bar"><div class="mini-fill" style="width: 35%;"></div></div>
+          </div>
+          <!-- Streak Card -->
+          <div class="dash-card card-streak">
+            <span class="card-badge">Streaks</span>
+            <div class="streak-score"><span id="dash-streak-days">0</span> Days</div>
+            <p>Consecutive active check-ins. Consistent logging builds habit!</p>
+          </div>
+          <!-- Hydration Card -->
+          <div class="dash-card card-water">
+            <span class="card-badge">Hydration Goal</span>
+            <div class="water-glasses">
+              <div class="water-glass" onclick="toggleWaterGlass(1)"><div class="water-fill"></div></div>
+              <div class="water-glass" onclick="toggleWaterGlass(2)"><div class="water-fill"></div></div>
+              <div class="water-glass" onclick="toggleWaterGlass(3)"><div class="water-fill"></div></div>
+              <div class="water-glass" onclick="toggleWaterGlass(4)"><div class="water-fill"></div></div>
+              <div class="water-glass" onclick="toggleWaterGlass(5)"><div class="water-fill"></div></div>
+              <div class="water-glass" onclick="toggleWaterGlass(6)"><div class="water-fill"></div></div>
+              <div class="water-glass" onclick="toggleWaterGlass(7)"><div class="water-fill"></div></div>
+              <div class="water-glass" onclick="toggleWaterGlass(8)"><div class="water-fill"></div></div>
+            </div>
+            <p>Goal: 8 glasses (2.5L) daily. Tap glasses to log hydration.</p>
+          </div>
+        </div>
+
+        <!-- QUICK PERIOD RELIEF CARE PACKAGE -->
+        <div class="dashboard-relief-section" style="margin-top: 2rem; background: white; border-radius: 24px; padding: 2rem; border: 1px solid var(--border); box-shadow: var(--shadow);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <h3 style="font-family: var(--font-serif); color: var(--plum);">🌸 Quick Period Pain Relief Lounge</h3>
+            <button class="nav-cta" onclick="showPage('comfort')">Explore Comfort Lounge ➔</button>
+          </div>
+          <p style="color: var(--mid); font-size: 0.88rem; margin-bottom: 1.5rem;">Need immediate relief? Tap below to view usage manuals and recommendations for roll-ons, heat patches, TENS massagers, and organic pads.</p>
+          <div class="relief-quick-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
+            <div class="relief-quick-card" onclick="showPage('comfort')" style="cursor: pointer; border: 1px solid var(--border); border-radius: 16px; padding: 1rem; display: flex; align-items: center; gap: 1rem; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+              <span style="font-size: 2rem;">🧴</span>
+              <div>
+                <h5 style="color: var(--plum); font-weight: 600;">Cramp Roll-on</h5>
+                <small style="color: var(--soft);">Menthol & Eucalyptus relief</small>
+              </div>
+            </div>
+            <div class="relief-quick-card" onclick="showPage('comfort')" style="cursor: pointer; border: 1px solid var(--border); border-radius: 16px; padding: 1rem; display: flex; align-items: center; gap: 1rem; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+              <span style="font-size: 2rem;">🔥</span>
+              <div>
+                <h5 style="color: var(--plum); font-weight: 600;">Thermal Patches</h5>
+                <small style="color: var(--soft);">8-Hour portable heat</small>
+              </div>
+            </div>
+            <div class="relief-quick-card" onclick="showPage('comfort')" style="cursor: pointer; border: 1px solid var(--border); border-radius: 16px; padding: 1rem; display: flex; align-items: center; gap: 1rem; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+              <span style="font-size: 2rem;">⚡</span>
+              <div>
+                <h5 style="color: var(--plum); font-weight: 600;">TENS Massager</h5>
+                <small style="color: var(--soft);">Drug-free pulse therapy</small>
+              </div>
+            </div>
+            <div class="relief-quick-card" onclick="showPage('comfort')" style="cursor: pointer; border: 1px solid var(--border); border-radius: 16px; padding: 1rem; display: flex; align-items: center; gap: 1rem; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+              <span style="font-size: 2rem;">🌿</span>
+              <div>
+                <h5 style="color: var(--plum); font-weight: 600;">Organic Pads</h5>
+                <small style="color: var(--soft);">Rash-free pure cotton</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-secondary-grid">
+          <!-- Chatbot Mini -->
+          <div class="chat-panel">
+            <div class="chat-header">
+              <div class="chat-avatar">🌸</div>
+              <div>
+                <h4>Ask Sakhi</h4>
+                <small class="typing-indicator">Always online to listen to you</small>
+              </div>
+            </div>
+            <div class="chat-messages" id="chat-box">
+              <div class="msg msg-bot">
+                <div class="msg-bubble">
+                  Namaste, sister! I am Sakhi. What questions or worries do you have today? We can talk about cramps, PCOD facial hair, periods, or emotional ups and downs. 🌸
+                </div>
+              </div>
+            </div>
+            <div class="chat-input-row">
+              <input type="text" id="chat-input-text" placeholder="Type here (e.g. remedies for unwanted hair)..." onkeydown="if(event.key==='Enter') sendChatMessage()"/>
+              <button class="chat-send-btn" onclick="sendChatMessage()">Send</button>
+            </div>
+          </div>
+
+          <!-- Heatmap Mini -->
+          <div class="heatmap-panel">
+            <h3>Symptom & Mood Heatmap</h3>
+            <p class="panel-subtitle">Colors indicate how you felt over the last 28 days.</p>
+            <div class="heatmap-grid" id="heatmap-cells">
+              <!-- Rendered dynamically -->
+            </div>
+            <div class="heatmap-legend">
+              <span>Good Days</span>
+              <div class="legend-scale">
+                <span class="scale-cell heat-1"></span>
+                <span class="scale-cell heat-2"></span>
+                <span class="scale-cell heat-3"></span>
+              </div>
+              <span>Severe Days</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. SYMPTOM CHECKER -->
+      <section id="page-checker" class="page-view">
+        <div class="section-header">
+          <h2>Symptom Assessment</h2>
+          <p>Find out what your body might be telling you through a series of gentle questions.</p>
+        </div>
+        <div class="checker-container" id="checker-workflow">
+          <!-- Rendered by app.js -->
+        </div>
+      </section>
+
+      <!-- 3. AYURVEDIC REMEDIES -->
+      <section id="page-remedies" class="page-view">
+        <div class="section-header">
+          <h2>Natural & Ayurvedic Remedies</h2>
+          <p>Chemical-free and affordable treatments easily sourced from your kitchen or local Indian markets.</p>
+          <div class="filter-row">
+            <input type="text" id="remedy-search" placeholder="Search remedies (e.g. hair, cramps)..." oninput="filterRemedies()"/>
+          </div>
+        </div>
+        <div class="remedy-grid" id="remedy-list-grid">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- 4. DIET PLANNER -->
+      <section id="page-diet" class="page-view">
+        <div class="section-header">
+          <h2>Smart Sync Diet Planner</h2>
+          <p>Hormone-supportive meal planning aligned with your current cycle phase to manage PCOD, insulin, and weight.</p>
+        </div>
+        
+        <div class="diet-config-card">
+          <h3>Personalize Your Plan</h3>
+          <div class="form-grid">
+            <div>
+              <label>Dietary Preference</label>
+              <select id="diet-preference" onchange="generateDietPlan()">
+                <option value="veg">Vegetarian 🌿</option>
+                <option value="egg">Veg + Eggs 🍳</option>
+                <option value="nonveg">Non-Vegetarian 🍗</option>
+              </select>
+            </div>
+            <div>
+              <label>Current Cycle Phase</label>
+              <select id="diet-phase" onchange="generateDietPlan()">
+                <option value="menstrual">Menstrual Phase (Day 1-5)</option>
+                <option value="follicular" selected>Follicular Phase (Day 6-13)</option>
+                <option value="ovulation">Ovulation Phase (Day 14-17)</option>
+                <option value="luteal">Luteal/PMS Phase (Day 18-28)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="diet-output-container">
+          <!-- Dynamic diet planner cards -->
+        </div>
+      </section>
+
+      <!-- 5. CYCLE TRACKER -->
+      <section id="page-cycle" class="page-view">
+        <div class="section-header">
+          <h2>Menstrual Cycle Calendar</h2>
+          <p>Log your dates, predict fertile windows, and identify cycle length patterns.</p>
+        </div>
+        
+        <div class="tracker-layout">
+          <div class="calendar-card">
+            <div class="calendar-header">
+              <button onclick="prevMonth()">◀</button>
+              <h3 id="calendar-month-year">June 2026</h3>
+              <button onclick="nextMonth()">▶</button>
+            </div>
+            <div class="calendar-weekdays">
+              <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+            </div>
+            <div class="calendar-days" id="calendar-cells">
+              <!-- Rendered dynamically -->
+            </div>
+            <div class="cycle-legend">
+              <div class="legend-item"><span class="legend-dot dot-period"></span> Period Day</div>
+              <div class="legend-item"><span class="legend-dot dot-fertile"></span> Fertile Window</div>
+              <div class="legend-item"><span class="legend-dot dot-ovulation"></span> Ovulation Day</div>
+              <div class="legend-item"><span class="legend-dot dot-pms"></span> PMS Zone</div>
+            </div>
+          </div>
+
+          <div class="cycle-input-card">
+            <h3>Log a Period</h3>
+            <div class="form-group">
+              <label>Start Date</label>
+              <input type="date" id="cycle-start-date"/>
+            </div>
+            <div class="form-group">
+              <label>Duration (days)</label>
+              <input type="number" id="cycle-duration" value="5" min="1" max="14"/>
+            </div>
+            <button class="btn-primary" onclick="logPeriodFromForm()">Save Cycle Logs</button>
+            <hr/>
+            <h4>Next Period Prediction</h4>
+            <p id="prediction-alert-text">No periods logged yet. Please log your start date.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. SLEEP TRACKER -->
+      <section id="page-sleep" class="page-view">
+        <div class="section-header">
+          <h2>Sleep Tracker</h2>
+          <p>Hormone recovery happens in deep sleep. Keep cortisol low by locking in regular sleep times.</p>
+        </div>
+        
+        <div class="sleep-grid">
+          <div class="sleep-log-card">
+            <h3>Log Your Sleep</h3>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="sleep-date"/>
+            </div>
+            <div class="form-group">
+              <label>Sleep Duration (hours)</label>
+              <input type="number" id="sleep-hours" min="1" max="16" step="0.5" value="7.5"/>
+            </div>
+            <button class="btn-primary" onclick="logSleepHours()">Save Sleep Log</button>
+          </div>
+          
+          <div class="sleep-protocol-card">
+            <h3>Sakhi Sleep Protocol 🌙</h3>
+            <ul>
+              <li><strong>Turmeric Milk (Haldi Doodh)</strong>: Drink warm turmeric milk at 9:30 PM to stimulate melatonin release.</li>
+              <li><strong>Circadian Sync</strong>: Try to be asleep before 11:00 PM. Cortisol spikes after midnight if awake.</li>
+              <li><strong>Digital Sunset</strong>: Shut off mobile and screens 30 minutes before sleep.</li>
+              <li><strong>Caffeine Cap</strong>: Stop consuming tea or coffee after 2:00 PM.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. MENTAL HEALTH & MOOD -->
+      <section id="page-mental" class="page-view">
+        <div class="section-header">
+          <h2>Mood & Mental Wellness</h2>
+          <p>PCOD and hormonal changes can cause mood swings and anxiety. We validate what you are feeling.</p>
+        </div>
+        
+        <div class="mental-layout">
+          <!-- Mood Logger -->
+          <div class="mood-logger-card">
+            <h3>How is your energy right now?</h3>
+            <div class="mood-selectors">
+              <button class="mood-btn" onclick="selectMood(5)"><span class="mood-emoji">🌸</span><span class="mood-lbl">Fabulous</span></button>
+              <button class="mood-btn" onclick="selectMood(4)"><span class="mood-emoji">😊</span><span class="mood-lbl">Balanced</span></button>
+              <button class="mood-btn" onclick="selectMood(3)"><span class="mood-emoji">😐</span><span class="mood-lbl">Okay</span></button>
+              <button class="mood-btn" onclick="selectMood(2)"><span class="mood-emoji">😔</span><span class="mood-lbl">Low</span></button>
+              <button class="mood-btn" onclick="selectMood(1)"><span class="mood-emoji">😭</span><span class="mood-lbl">Overwhelmed</span></button>
+            </div>
+            <div class="form-group">
+              <label>Notes (Optional)</label>
+              <input type="text" id="mood-notes" placeholder="How are you holding up today?"/>
+            </div>
+            <button class="btn-primary" onclick="submitMoodLog()">Log Mood</button>
+            
+            <button class="btn-emergency" onclick="triggerEmergencySupport()">⚠️ I'm not okay today</button>
+          </div>
+
+          <!-- Journal Section -->
+          <div class="journal-card">
+            <h3>Private Journal</h3>
+            <p class="card-subtext">All entries are encrypted and saved locally in your own browser.</p>
+            <textarea id="journal-input" class="journal-area" placeholder="Write your thoughts, feelings, or secrets here..."></textarea>
+            <button class="btn-secondary" onclick="saveJournalEntry()">Save to Journal</button>
+            
+            <div class="journal-list" id="journal-entries-list">
+              <!-- Render entries dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Breathing Exercise -->
+        <div class="breathing-card">
+          <h3>4-7-8 Breathing Circle</h3>
+          <p>Cortisol relief in 2 minutes. Follow the circle size and instructions.</p>
+          <div class="breathing-circle-container">
+            <div class="breathing-circle" id="breath-circle"></div>
+            <div class="breathing-instruction" id="breath-text">Tap Start to Begin</div>
+          </div>
+          <button class="btn-primary" onclick="toggleBreathingExercise()" id="btn-breath-start">Start Breathing</button>
+        </div>
+      </section>
+
+      <!-- 8. BREAST HEALTH -->
+      <section id="page-breast" class="page-view">
+        <div class="section-header">
+          <h2>Breast Health & Visual Guides</h2>
+          <p>Doctor-approved, censored medical animations showing self-examination steps and visual warnings.</p>
+        </div>
+        
+        <div class="breast-layout">
+          <!-- Animated Check Visual Guide (Slideshow) -->
+          <div class="self-exam-card">
+            <div class="bse-header">
+              <h3>BSE Interactive Step-by-Step Guide</h3>
+              <span class="bse-step-indicator" id="bse-step-indicator">Step 1 of 8</span>
+            </div>
+
+            <!-- Slideshow Content Area -->
+            <div class="bse-slideshow-container">
+              <div class="bse-svg-display" id="bse-svg-display">
+                <!-- Loaded dynamically by app.js -->
+              </div>
+              <div class="bse-info-panel">
+                <h4 id="bse-step-title">Step Title</h4>
+                <p id="bse-step-desc">Step Description</p>
+                <div class="bse-alert-box" id="bse-step-alert">
+                  Warning/Alert criteria
+                </div>
+              </div>
+            </div>
+            
+            <div class="bse-controls">
+              <button class="btn-secondary" onclick="prevBseStep()">◀ Previous</button>
+              <div class="bse-dots" id="bse-dots-container"></div>
+              <button class="btn-primary" onclick="nextBseStep()">Next ▶</button>
+            </div>
+
+            <div class="bse-instructions-block" style="margin-top: 1.5rem; background: var(--rose-pale); padding: 1.5rem; border-radius: 16px; border: 1px dashed var(--rose-light);">
+              <h4 style="font-family: var(--font-serif); color: var(--plum); margin-bottom: 0.75rem;">📋 Step-by-Step Check Instructions:</h4>
+              <ol id="bse-instructions-list" style="padding-left: 1.25rem; font-size: 0.9rem; line-height: 1.6; color: var(--charcoal); display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- Loaded dynamically -->
+              </ol>
+            </div>
+          </div>
+
+          <!-- Doctor Signs Advisory (Censored warnings) -->
+          <div class="breast-screening-calculator">
+            <h3>Visual Anomalies Alert Guide</h3>
+            <p class="card-subtext">How abnormalities visually differ from balanced tissue structures:</p>
+            
+            <div class="warnings-grid">
+              <div class="warning-item">
+                <svg viewBox="0 0 100 100" width="50" height="50">
+                  <circle cx="50" cy="50" r="35" fill="none" stroke="#F0E8E8" stroke-width="2"/>
+                  <path d="M 15 50 Q 30 50 25 45" fill="none" stroke="#E8526A" stroke-width="3"/>
+                  <circle cx="50" cy="50" r="4" fill="#E8526A"/>
+                </svg>
+                <div>
+                  <h5>Dimpling (Skin Pull)</h5>
+                  <p>Abnormal: A dip or depression pulling inwards. Normal: Flat, rounded skin contour.</p>
+                </div>
+              </div>
+
+              <div class="warning-item">
+                <svg viewBox="0 0 100 100" width="50" height="50">
+                  <circle cx="50" cy="50" r="35" fill="none" stroke="#F0E8E8" stroke-width="2"/>
+                  <path d="M 45 50 Q 50 58 55 50" fill="none" stroke="#E8526A" stroke-width="3"/>
+                </svg>
+                <div>
+                  <h5>Nipple Inversion</h5>
+                  <p>Abnormal: Nipple turning inward or flat. Normal: Outward pointing or symmetrical shape.</p>
+                </div>
+              </div>
+
+              <div class="warning-item">
+                <svg viewBox="0 0 100 100" width="50" height="50">
+                  <circle cx="50" cy="50" r="35" fill="none" stroke="#F0E8E8" stroke-width="2"/>
+                  <circle cx="50" cy="50" r="4" fill="#E8526A"/>
+                  <path d="M 50 50 L 80 80" stroke="#FF5252" stroke-width="3" stroke-dasharray="2 2"/>
+                </svg>
+                <div>
+                  <h5>One-Spot Pain</h5>
+                  <p>Abnormal: Continuous throbbing in one localized area. Normal: Light pre-period overall tenderness.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+              <label>Enter Age to Calculate standard screening plan</label>
+              <input type="number" id="breast-age" value="25"/>
+            </div>
+            <button class="btn-primary" onclick="checkBreastAdvisory()" style="width: 100%;">Show Advisory</button>
+            <div id="breast-advisory-output" class="advisory-output">
+              Submit age to show standard schedules.
+            </div>
+          </div>
+
+          <!-- Breast Self-Exam Logger & History -->
+          <div class="bse-history-card" style="background: white; border: 1px solid var(--border); border-radius: 20px; padding: 2rem; box-shadow: var(--shadow); grid-column: span 2;">
+            <h3 style="font-family: var(--font-serif); color: var(--plum); margin-bottom: 0.5rem;">📅 Breast Exam Logging Tracker</h3>
+            <p class="card-subtext" style="color: var(--mid); font-size: 0.88rem; margin-bottom: 1.5rem;">Regular monthly logging helps track variations over cycles. Record your check results below.</p>
+            
+            <div class="bse-log-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; align-items: flex-end;">
+              <div class="form-group">
+                <label>Check Date</label>
+                <input type="date" id="bse-log-date"/>
+              </div>
+              <div class="form-group">
+                <label>Exam Findings</label>
+                <select id="bse-log-findings">
+                  <option value="normal" selected>Normal tissue (No anomalies felt) 🌸</option>
+                  <option value="pain">Tenderness / Localized Pain 🤕</option>
+                  <option value="lump">Hard Lump / Thickening felt ⚠️</option>
+                  <option value="discharge">Nipple Discharge / Inversion ⚠️</option>
+                </select>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label>Private Notes</label>
+                <input type="text" id="bse-log-notes" placeholder="e.g. Left breast felt normal, right was slightly tender before period..."/>
+              </div>
+              <button class="btn-primary" onclick="submitBseLog()" style="height: 38px; margin-bottom: 2px;">Save Today's Exam Log</button>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;"/>
+
+            <h4 style="font-family: var(--font-serif); color: var(--plum); margin-bottom: 0.75rem;">Exam Logs History</h4>
+            <div id="bse-logs-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <!-- Loaded dynamically -->
+              <p style="font-size: 0.82rem; color: var(--soft); text-align: center;">No exam logs found. Start logging monthly!</p>
+            </div>
+          </div>
+
+          <!-- Full BSE Cartoon Reference Chart -->
+          <div class="bse-chart-card" style="background: white; border: 1px solid var(--border); border-radius: 20px; padding: 2rem; box-shadow: var(--shadow); grid-column: span 2; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h3 style="font-family: var(--font-serif); color: var(--plum); margin-bottom: 0.5rem; align-self: flex-start;">📊 Cartoon Self-Exam Chart</h3>
+            <p class="card-subtext" style="color: var(--mid); font-size: 0.88rem; margin-bottom: 1.5rem; align-self: flex-start;">Standard 7-panel cartoon-realistic pose map for visual reference:</p>
+            <img src="bse_guide.png" alt="Breast Self-Exam Step-by-Step Cartoon Chart" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow);"/>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8.5 PAIN COMFORT LOUNGE -->
+      <section id="page-comfort" class="page-view">
+        <div class="section-header">
+          <h2>Period Pain Comfort Lounge 🌸</h2>
+          <p>Instant pain relief methods, premium soothing items (roll-ons, heat patches, TENS massagers, and organic pads) and how to use them to get relief.</p>
+        </div>
+        <div class="comfort-grid">
+          <div class="comfort-card">
+            <div class="comfort-img-container">
+              <img src="cramp_rollon.png" alt="Pee Safe Period Cramp Roll-on" class="comfort-img"/>
+            </div>
+            <div class="comfort-info">
+              <span class="comfort-badge">Quick Relief</span>
+              <h3>Period Cramp Roll-ons</h3>
+              <p class="comfort-brand">Suggested: Pee Safe Cramp Relief Roll-on / Nua Cramp Comfort</p>
+              <p class="comfort-desc">Formulated with natural cooling and soothing extracts like Menthol, Eucalyptus oil, and Wintergreen oil. It absorbs quickly into the skin to relieve muscle spasms.</p>
+              <div class="comfort-usage">
+                <strong>How to use to get relief:</strong>
+                <ol>
+                  <li>Roll gently over your lower abdomen, lower back, or thighs where you feel cramping.</li>
+                  <li>Let it absorb. It creates a comforting warm-cool sensation in 5-10 minutes.</li>
+                  <li>Reapply every 3-4 hours as needed.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div class="comfort-card">
+            <div class="comfort-img-container">
+              <img src="heat_patch.png" alt="Nua Cramp Comfort Heat Patch" class="comfort-img"/>
+            </div>
+            <div class="comfort-info">
+              <span class="comfort-badge">8-Hour Comfort</span>
+              <h3>Thermal Cramp Relief Patches & Tapes</h3>
+              <p class="comfort-brand">Suggested: Pee Safe Feminine Cramp Relief Patch / Nua Heat Patch</p>
+              <p class="comfort-desc">Air-activated patches that emit constant, gentle heat (around 40°C) to relax uterine muscles and improve blood flow, mimicking a hot water bottle on-the-go.</p>
+              <div class="comfort-usage">
+                <strong>How to use to get relief:</strong>
+                <ol>
+                  <li>Open the packaging to activate the thermal cells.</li>
+                  <li>Peel off the backing paper and stick the patch <strong>onto the outside of your underwear</strong> (never apply directly to bare skin to prevent burns).</li>
+                  <li>Wear it for up to 8 hours for continuous, portable soothing warmth.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div class="comfort-card">
+            <div class="comfort-img-container">
+              <img src="pain_massager.png" alt="Welme Period Pain TENS Massager Device" class="comfort-img"/>
+            </div>
+            <div class="comfort-info">
+              <span class="comfort-badge">Advanced Tech</span>
+              <h3>Period Pain TENS Massager Devices</h3>
+              <p class="comfort-brand">Suggested: Welme Period Pain Relief Device / Pulse Stimulators</p>
+              <p class="comfort-desc">A wearable, drug-free device that sends safe, micro-current electrical pulses to stimulate nerves, blocking pain signals to the brain and triggering endorphin release.</p>
+              <div class="comfort-usage">
+                <strong>How to use to get relief:</strong>
+                <ol>
+                  <li>Place the gel pads on your lower abdomen or lower back where the pain is concentrated.</li>
+                  <li>Connect the device and turn it on, adjusting the intensity to a comfortable pulse level.</li>
+                  <li>Use it for 20-30 minute sessions. You can wear it under your clothes while working or walking.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div class="comfort-card">
+            <div class="comfort-img-container">
+              <img src="natural_pads.png" alt="Nua Organic Cotton Sanitary Pads" class="comfort-img"/>
+            </div>
+            <div class="comfort-info">
+              <span class="comfort-badge">Pure Protection</span>
+              <h3>Organic & Natural Sanitary Pads</h3>
+              <p class="comfort-brand">Suggested: Nua Organic Cotton Pads / Carmesi Bamboo Pads</p>
+              <p class="comfort-desc">Made from 100% certified organic cotton or biodegradable bamboo fibers. Free from chlorine bleach, dioxins, synthetic fragrances, and plastics, preventing skin rashes.</p>
+              <div class="comfort-usage">
+                <strong>How to use to get relief:</strong>
+                <ol>
+                  <li>Choose the correct absorbency size (Light, Heavy, XL) corresponding to your flow.</li>
+                  <li>Change pads every 4-6 hours, even on lighter flow days, to maintain hygiene.</li>
+                  <li>Store in a clean, dry place to prevent moisture from compromising the natural fibers.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Period Pain Relief Yoga Section -->
+        <div class="comfort-header-yoga" style="margin-top: 3rem; margin-bottom: 1.5rem;">
+          <h2>Period Pain Relief Yoga & Exercises 🧘</h2>
+          <p>Gentle posture routines with interactive animations to stretch abdominal organs, open the pelvic floor, and relieve localized period pain spikes.</p>
+        </div>
+
+        <div class="yoga-interactive-layout" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; background: white; border-radius: 24px; padding: 2rem; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 3rem;">
+          <!-- SVG display and controls -->
+          <div class="yoga-animation-card" style="display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 100%;">
+            <div class="animation-toggle-bar" style="display: flex; gap: 0.5rem; background: var(--cream); padding: 0.25rem; border-radius: 30px; border: 1px solid var(--border); margin-bottom: 0.5rem;">
+              <button class="btn-toggle active" id="btn-yoga-mode-vector" onclick="setYogaMode('vector')" style="border: none; background: var(--rose); color: white; padding: 0.35rem 1rem; border-radius: 20px; font-size: 0.78rem; cursor: pointer; font-weight: 600; transition: all 0.2s;">🎨 Vector Guide</button>
+              <button class="btn-toggle" id="btn-yoga-mode-gif" onclick="setYogaMode('gif')" style="border: none; background: transparent; color: var(--mid); padding: 0.35rem 1rem; border-radius: 20px; font-size: 0.78rem; cursor: pointer; font-weight: 600; transition: all 0.2s;">🎥 Real GIF</button>
+            </div>
+            <div class="yoga-svg-container" id="yoga-svg-display" style="width: 100%; height: 260px; background: #FFF0F2; border-radius: 16px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--rose-light); padding: 10px;">
+              <!-- Rendered by app.js -->
+            </div>
+            <div class="yoga-controls" style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
+              <button class="btn-secondary active" id="btn-yoga-vajrasana" onclick="switchYogaPose('vajrasana')">Vajrasana (Thunderbolt)</button>
+              <button class="btn-secondary" id="btn-yoga-balasana" onclick="switchYogaPose('balasana')">Balasana (Child's Pose)</button>
+              <button class="btn-secondary" id="btn-yoga-butterfly" onclick="switchYogaPose('butterfly')">Baddha Konasana (Butterfly)</button>
+              <button class="btn-secondary" id="btn-yoga-catcow" onclick="switchYogaPose('catcow')">Cat-Cow Pose</button>
+            </div>
+          </div>
+          
+          <!-- Instructions panel -->
+          <div class="yoga-instructions-card" style="display: flex; flex-direction: column; justify-content: center;">
+            <h3 id="yoga-pose-title" style="font-family: var(--font-serif); color: var(--plum); margin-bottom: 0.5rem;">Vajrasana (Thunderbolt Pose)</h3>
+            <span id="yoga-pose-benefit" class="comfort-badge" style="align-self: flex-start; margin-bottom: 1rem; background: var(--sage-light); color: var(--sage);">Relieves Bloating & Pelvic Congestion</span>
+            <p id="yoga-pose-desc" style="color: var(--mid); margin-bottom: 1.25rem; font-size: 0.92rem; line-height: 1.5;">Kneeling posture that regulates digestion and stimulates blood flow to the lower pelvic muscles to prevent severe uterine spasms.</p>
+            
+            <div style="background: var(--cream); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border);">
+              <h5 style="color: var(--plum); font-weight: 700; margin-bottom: 0.5rem;">How to practice to get relief:</h5>
+              <ol id="yoga-pose-steps" style="padding-left: 1.2rem; font-size: 0.88rem; line-height: 1.6; color: var(--charcoal); display: flex; flex-direction: column; gap: 0.4rem;">
+                <!-- Rendered dynamically -->
+              </ol>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. PERSONAL TRAINER -->
+      <section id="page-trainer" class="page-view">
+        <div class="section-header">
+          <h2>Daily Health Companion & Trainer</h2>
+          <p>Your timeline adjusts dynamically based on your sleeping patterns, meal frequencies, and lifestyle habits.</p>
+        </div>
+        
+        <div class="trainer-layout">
+          <!-- Daily Timeline -->
+          <div class="timeline-card">
+            <h3>Your Personalized Routine</h3>
+            <div class="timeline" id="trainer-timeline-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Exercises panel -->
+          <div class="exercises-panel" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <h3>Daily Health & Mobility Exercises 🏃‍♀️</h3>
+            <p style="color: var(--mid); font-size: 0.88rem; margin-bottom: 0;">Low-impact daily mobility exercises to improve pelvic circulation, release spine tension, and boost insulin response for a healthier lifestyle.</p>
+            
+            <div class="trainer-exercise-layout" style="display: grid; gap: 1.5rem; background: var(--cream); border-radius: 20px; padding: 1.5rem; border: 1px solid var(--border);">
+              <div class="animation-toggle-bar" style="display: flex; gap: 0.5rem; background: white; padding: 0.25rem; border-radius: 30px; border: 1px solid var(--border); margin: 0 auto; margin-bottom: 0.5rem; width: fit-content;">
+                <button class="btn-toggle active" id="btn-trainer-mode-vector" onclick="setTrainerMode('vector')" style="border: none; background: var(--rose); color: white; padding: 0.35rem 1rem; border-radius: 20px; font-size: 0.78rem; cursor: pointer; font-weight: 600; transition: all 0.2s;">🎨 Vector Guide</button>
+                <button class="btn-toggle" id="btn-trainer-mode-gif" onclick="setTrainerMode('gif')" style="border: none; background: transparent; color: var(--mid); padding: 0.35rem 1rem; border-radius: 20px; font-size: 0.78rem; cursor: pointer; font-weight: 600; transition: all 0.2s;">🎥 Real GIF</button>
+              </div>
+              <!-- GIF Display -->
+              <div id="trainer-gif-display" style="width: 100%; height: 200px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); overflow: hidden; padding: 5px;">
+                <!-- Loaded dynamically by app.js -->
+              </div>
+              
+              <!-- Selector Buttons -->
+              <div class="trainer-exercise-controls" style="display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center;">
+                <button class="btn-secondary active" id="btn-trainer-squats" onclick="switchTrainerExercise('squats')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Gentle Squats</button>
+                <button class="btn-secondary" id="btn-trainer-stretch" onclick="switchTrainerExercise('stretch')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Hamstring Stretch</button>
+                <button class="btn-secondary" id="btn-trainer-rolls" onclick="switchTrainerExercise('rolls')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Shoulder Rolls</button>
+                <button class="btn-secondary" id="btn-trainer-marching" onclick="switchTrainerExercise('marching')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Brisk Marching</button>
+              </div>
+              
+              <!-- Info & Steps -->
+              <div>
+                <h4 id="trainer-ex-title" style="font-family: var(--font-serif); color: var(--plum); margin-bottom: 0.25rem;">Gentle bodyweight squats</h4>
+                <p id="trainer-ex-benefit" style="font-size: 0.8rem; color: var(--rose); font-weight: 600; margin-bottom: 0.75rem;">Strengthens pelvic floor & stabilizes insulin levels.</p>
+                <ol id="trainer-ex-steps" style="padding-left: 1.2rem; font-size: 0.82rem; line-height: 1.5; color: var(--mid); display: flex; flex-direction: column; gap: 0.3rem;">
+                  <!-- Loaded dynamically -->
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10. ML ANALYZER -->
+      <section id="page-ml" class="page-view">
+        <div class="section-header">
+          <h2>ML Health Report Explainer</h2>
+          <p>Upload your lab report or enter values from your blood tests to translate medical shorthand into plain, clear English.</p>
+        </div>
+        
+        <div class="ml-analyzer-grid">
+          <div class="analyzer-form">
+            <h3>Enter Lab Values</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>LH (Luteinizing Hormone) <span class="unit">mIU/mL</span></label>
+                <input type="number" id="ml-lh" placeholder="e.g. 14.5" step="0.1"/>
+              </div>
+              <div class="form-group">
+                <label>FSH (Follicle Stimulating Hormone) <span class="unit">mIU/mL</span></label>
+                <input type="number" id="ml-fsh" placeholder="e.g. 6.2" step="0.1"/>
+              </div>
+              <div class="form-group">
+                <label>Total Testosterone <span class="unit">ng/dL</span></label>
+                <input type="number" id="ml-testosterone" placeholder="e.g. 85" step="1"/>
+              </div>
+              <div class="form-group">
+                <label>Fasting Insulin <span class="unit">uIU/mL</span></label>
+                <input type="number" id="ml-insulin" placeholder="e.g. 18" step="0.1"/>
+              </div>
+              <div class="form-group">
+                <label>TSH (Thyroid Stimulating Hormone) <span class="unit">uIU/mL</span></label>
+                <input type="number" id="ml-tsh" placeholder="e.g. 5.1" step="0.1"/>
+              </div>
+            </div>
+            
+            <div class="file-upload-mock">
+              <label>Or Upload Mammogram / Ultrasound Image / Lab PDF (Mock Analyzer)</label>
+              <input type="file" id="ml-file-picker" accept="image/*,.pdf" onchange="handleMockFileAnalysis()"/>
+              <div class="upload-area">
+                <span class="upload-icon">📄</span>
+                <p id="upload-status-lbl">Drag and drop file here, or click to choose</p>
+              </div>
+            </div>
+
+            <button class="btn-primary" onclick="runMlReportAnalysis()">Explain & Analyze Metrics</button>
+          </div>
+
+          <div class="analyzer-results" id="analyzer-results-panel">
+            <h3>Analysis Output</h3>
+            <p>Your results will be shown here. (Processed securely, no medical logs are saved permanently on server storage).</p>
+            <!-- Render outputs -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 11. ANONYMOUS COMMUNITY -->
+      <section id="page-community" class="page-view">
+        <div class="section-header">
+          <h2>Anonymous Community Board</h2>
+          <p>Connect with other women going through PCOD, period worries, or hormonal transitions. No profiles. No judgements.</p>
+        </div>
+        
+        <div class="community-layout">
+          <div class="post-creator-card">
+            <h3>Share Your Story</h3>
+            <textarea id="community-post-text" placeholder="Write anonymous post... (No names or identification required)"></textarea>
+            <div class="post-creator-row">
+              <input type="text" id="community-post-tags" placeholder="Add tags (separated by commas: PCOD, Cramps)"/>
+              <button class="btn-primary" onclick="submitCommunityPost()">Post Anonymously</button>
+            </div>
+          </div>
+
+          <div class="posts-feed" id="community-feed">
+            <!-- Posts rendered dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 12. EDUCATION HUB -->
+      <section id="page-education" class="page-view">
+        <div class="section-header">
+          <h2>Education Hub & Myth Buster</h2>
+          <p>Knowledge is power. Select your age segment to learn standard facts about your reproductive system.</p>
+          <div class="age-tab-row">
+            <button class="tab-btn active" onclick="filterEducation('13-18')">Teen (13-18)</button>
+            <button class="tab-btn" onclick="filterEducation('19-25')">Young Adult (19-25)</button>
+            <button class="tab-btn" onclick="filterEducation('26-35')">Adult Woman (26-35)</button>
+            <button class="tab-btn" onclick="filterEducation('36-50')">Perimenopause (36-50)</button>
+            <button class="tab-btn" onclick="filterEducation('50')">Golden Age (50+)</button>
+          </div>
+        </div>
+
+        <div class="education-content" id="education-articles">
+          <!-- Loaded dynamically -->
+        </div>
+
+        <div class="myth-buster-section">
+          <h3>Myth vs Fact 💡</h3>
+          <div class="myth-grid">
+            <div class="myth-card">
+              <span class="myth-lbl">Myth</span>
+              <p>PCOD means you are infertile and cannot have children.</p>
+              <hr/>
+              <span class="fact-lbl">Fact</span>
+              <p>FALSE. PCOD causes irregular ovulation, meaning it may take longer to conceive naturally, but with lifestyle changes and simple support, most women can become pregnant.</p>
+            </div>
+            <div class="myth-card">
+              <span class="myth-lbl">Myth</span>
+              <p>Period pain is completely normal; you just have to deal with it.</p>
+              <hr/>
+              <span class="fact-lbl">Fact</span>
+              <p>Mild cramping is normal. However, severe, debilitating pain that forces you to miss school or work is NOT normal and could indicate conditions like endometriosis. Talk to a gynecologist.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 13. GENETIC RISK CALCULATOR -->
+      <section id="page-risk" class="page-view">
+        <div class="section-header">
+          <h2>Genetic Risk Assessment</h2>
+          <p>Understand how family history might affect your susceptibility to hormonal disorders and cell abnormalities.</p>
+        </div>
+        
+        <div class="risk-layout">
+          <div class="risk-form-card">
+            <h3>Family History Questionnaire</h3>
+            
+            <div class="checkbox-group">
+              <input type="checkbox" id="risk-mother-pcod"/>
+              <label for="risk-mother-pcod">Has your mother been diagnosed with PCOD / PCOS?</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="risk-sister-pcod"/>
+              <label for="risk-sister-pcod">Has your sister been diagnosed with PCOD / PCOS?</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="risk-cancer"/>
+              <label for="risk-cancer">Do you have a mother or sister diagnosed with breast cancer?</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="risk-grand-cancer"/>
+              <label for="risk-grand-cancer">Did your maternal/paternal grandmother have breast cancer?</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="risk-diabetes"/>
+              <label for="risk-diabetes">Is there a family history of Type 2 Diabetes? (Highly connected to PCOD Insulin Resistance)</label>
+            </div>
+            
+            <div class="form-group">
+              <label>At what age did you get your first menstrual period?</label>
+              <input type="number" id="risk-first-period" value="13" min="8" max="20"/>
+            </div>
+
+            <button class="btn-primary" onclick="calculateGeneticRisks()">Calculate Genetic Risk Profiles</button>
+          </div>
+
+          <div class="risk-results-card" id="risk-results-output">
+            <h3>Risk Report</h3>
+            <p>Submit the questionnaire on the left to compute potential genetic patterns.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 14. DOCTOR FINDER / ESCALATION -->
+      <section id="page-doctor" class="page-view">
+        <div class="section-header">
+          <h2>Lady Gynecologist Finder & Clinics</h2>
+          <p>Select your region below to find 4-5 trusted female gynecologists specialized in treating PCOD, hormonal, and breast wellness issues.</p>
+        </div>
+
+        <div class="doctor-search-card">
+          <div class="form-group">
+            <label>Enter Your City, Pincode, or Location</label>
+            <input type="text" id="doctor-region-select" placeholder="e.g. Pune, Noida, Chandigarh, Mumbai..." value="Delhi" onkeydown="if(event.key==='Enter') findLadyGynecologists()"/>
+          </div>
+          <button class="btn-primary" onclick="findLadyGynecologists()">Search Female Gynecologists</button>
+        </div>
+
+        <!-- Lady Gynecologist List Grid -->
+        <div class="clinics-panel">
+          <h3>Lady Gynecologists in Your Selected Region</h3>
+          <div class="gynae-grid" id="lady-gynae-list">
+            <!-- Dynamically loaded list of gynecologists -->
+          </div>
+        </div>
+
+        <div class="escalation-alert-card" style="margin-top: 2rem;">
+          <div class="alert-icon">🏥</div>
+          <h3>Urgent Symptom Notice</h3>
+          <p>Please consult any of the specialists above or your local clinic immediately if you experience:</p>
+          <ul>
+            <li>Sudden local breast dimpling or red/bloody discharge.</li>
+            <li>Cycle delay exceeding 90 consecutive days.</li>
+            <li>Pain levels requiring clinical mitigation.</li>
+          </ul>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- EMERGENCY MODAL -->
+  <div class="modal-backdrop" id="emergency-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>You are not alone, sister. 💛</h3>
+        <button class="modal-close" onclick="closeEmergencyModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <p>What you are feeling is real and valid. Ovarian stress and high cortisol levels often spike mood dips, anxiety, and tears. You do not have to fight this alone.</p>
+        
+        <div class="action-box">
+          <h4>Try a grounding breath:</h4>
+          <p>Slowly breathe in for 4 seconds, hold for 7 seconds, and exhale for 8 seconds. This resets your nervous system immediately.</p>
+        </div>
+
+        <div class="helplines-box">
+          <h4>Need someone to talk to?</h4>
+          <p><strong>NIMHANS Psychosocial Support Line</strong>: 080-46110007 (Free, 24/7)</p>
+          <p><strong>KIRAN Mental Health Helpline</strong>: 1800-599-0019</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="closeEmergencyModal()">I feel a bit better, thank you</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=5"></script>
+</body>
+</html>
