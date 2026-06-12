@@ -1806,10 +1806,22 @@ function copyPartnerId() {
   });
 }
 
+function openProfileSettings() {
+  document.getElementById('onboard-nickname').value = userHabits.nickname || "";
+  document.getElementById('onboard-wake').value = userHabits.wakeTime || "06:30";
+  document.getElementById('onboard-sleep').value = userHabits.sleepTime || "22:30";
+  document.getElementById('onboard-meals').value = userHabits.meals || "3";
+  document.getElementById('onboard-preference').value = userHabits.foodPreference || "veg";
+  document.getElementById('onboard-age').value = userHabits.age || "23";
+  document.getElementById('onboard-location').value = userHabits.location || "Delhi";
+  document.getElementById('habits-overlay').style.display = 'flex';
+}
+
 function handleLogout() {
   localStorage.removeItem('sakhi_auth_user');
   localStorage.removeItem('sakhi_user_token');
   localStorage.removeItem('sakhi_partner_token');
+  localStorage.removeItem('sakhi_user_gender');
   activeUser = null;
   userToken = 'anonymous-default';
   location.reload();
