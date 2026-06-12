@@ -1224,7 +1224,7 @@ function renderBseStep() {
     dotsContainer.appendChild(dot);
   });
 
-  if (currentBseStep === 5) {
+  if (currentBseStep === 3) {
     playBreastAnimation('spiral');
   }
 
