@@ -397,15 +397,15 @@ function renderHimDashboard() {
       `;
     } else {
       partnerRow.innerHTML = `
-        🔒 Partner logs locked. <span style="cursor: pointer; text-decoration: underline; color: var(--rose); font-weight: 700;" onclick="showPage('cycle')">Link Partner ID</span> to view period forecasts.
+        🔒 Partner logs locked. Enter her Sakhi Sync ID below to load her cycle and reports in real-time.
       `;
     }
   }
 
-  // Hide water glass container from view in Him Mode and instead show a "How to Care for Her" card
+  // Find the water card (renamed to Care/Action guide)
   const waterCard = document.querySelector('.card-water');
   if (waterCard) {
-    waterCard.style.minHeight = '180px';
+    waterCard.style.minHeight = '230px';
     const badge = waterCard.querySelector('.card-badge');
     if (badge) badge.innerText = "Care Action Guide";
     
@@ -421,43 +421,49 @@ function renderHimDashboard() {
       const partnerName = userHabits.nickname || "partner";
       if (diffDays <= 5) {
         actionHtml = `
-          <h4 style="color: var(--rose); margin-bottom: 0.5rem;">Cramp & Pain Comfort 🧴</h4>
-          <p style="font-size: 0.82rem; line-height: 1.4; color: var(--charcoal);">
-            ${partnerName} is in her menstrual phase. Help her by preparing a **Castor Oil pack** or a **warm heating bag** for her lower back. Keep a **cramp roll-on** handy and avoid planning heavy physical outings.
+          <h4 style="color: var(--rose); margin-bottom: 0.4rem;">Cramp & Pain Comfort 🧴</h4>
+          <p style="font-size: 0.8rem; line-height: 1.4; color: var(--charcoal);">
+            <strong>How to Console & Handle Her:</strong> She may feel exhausted or in pain. Avoid asking difficult questions, keep arguments at zero, and give her space or hold her gently.
+            <br/><strong>What to do/Show Love:</strong> Brew warm **Ginger tea** 3 times daily. Keep a heating patch or cramp roll-on ready. Serve iron-rich food.
           </p>
         `;
       } else if (diffDays <= 13) {
         actionHtml = `
-          <h4 style="color: var(--sage); margin-bottom: 0.5rem;">Nourish & Active Walk 🏃‍♀️</h4>
-          <p style="font-size: 0.82rem; line-height: 1.4; color: var(--charcoal);">
-            ${partnerName} is in her follicular phase. Her estrogen is rising! Encourage her to have **fresh green moong sprouts** and join her for a **brisk 30-minute outdoor walk** to improve insulin sensitivity.
+          <h4 style="color: var(--sage); margin-bottom: 0.4rem;">Nourish & Outdoor Date 🏃‍♀️</h4>
+          <p style="font-size: 0.8rem; line-height: 1.4; color: var(--charcoal);">
+            <strong>How to Console & Handle Her:</strong> Estrogen is rising! She feels positive and communicative.
+            <br/><strong>What to do/Show Love:</strong> Plan an outdoor date or go for a brisk 30-minute evening walk together. Help her prepare fresh salads and green sprouts.
           </p>
         `;
       } else if (diffDays <= 17) {
         actionHtml = `
-          <h4 style="color: var(--gold); margin-bottom: 0.5rem;">Zinc Support & Outing ✨</h4>
-          <p style="font-size: 0.82rem; line-height: 1.4; color: var(--charcoal);">
-            ${partnerName} is in her ovulation phase. Her energy is at its peak. Encourage her to eat **zinc-rich seeds (like pumpkin or sunflower)**. Great time to plan a fun date or outdoor exercise!
+          <h4 style="color: var(--gold); margin-bottom: 0.4rem;">High Energy & Outings ✨</h4>
+          <p style="font-size: 0.8rem; line-height: 1.4; color: var(--charcoal);">
+            <strong>How to Console & Handle Her:</strong> Peak cycle confidence and social energy. Talk about future plans.
+            <br/><strong>What to do/Show Love:</strong> Surprise her with a healthy gift. Cook seeds-rich snacks (pumpkin/sesame). Excellent time for physical exercise or runs together.
           </p>
         `;
       } else {
         actionHtml = `
-          <h4 style="color: var(--plum); margin-bottom: 0.5rem;">Reduce Cortisol & Spearmint Tea ☕</h4>
-          <p style="font-size: 0.82rem; line-height: 1.4; color: var(--charcoal);">
-            ${partnerName} is in her PMS week. She might feel bloated. Brew her a cup of **warm spearmint tea** around 5:30 PM, reduce salt in dinner to prevent water retention, and help her wind down to sleep by 10:30 PM.
+          <h4 style="color: var(--plum); margin-bottom: 0.4rem;">PMS Consoling & Spearmint Tea ☕</h4>
+          <p style="font-size: 0.8rem; line-height: 1.4; color: var(--charcoal);">
+            <strong>How to Console & Handle Her:</strong> Progesterone drops, triggering anxiety, mood shifts, or tears. **Do not dismiss her feelings!** Offer reassurance, listen without correcting, and give her a warm hug.
+            <br/><strong>What to do/Show Love:</strong> Prepare a warm cup of **Spearmint tea** at 5:30 PM to lower PCOD androgens. Keep sodium low at dinner.
           </p>
         `;
       }
     } else {
+      // General support instructions when not synced
       actionHtml = `
-        <h4 style="color: var(--rose); margin-bottom: 0.5rem;">Intimate Partner Sync</h4>
-        <p style="font-size: 0.82rem; line-height: 1.4; color: var(--charcoal);">
-          Link your partner's ID to unlock customized care protocols. In the meantime, learn about Ayurvedic herbs (like Shatavari) in the **Ayurvedic Engine** tab.
-        </p>
+        <h4 style="color: var(--rose); margin-bottom: 0.4rem;">Men's Guide to Female Care 🌸</h4>
+        <div style="font-size: 0.78rem; line-height: 1.4; color: var(--charcoal); display: flex; flex-direction: column; gap: 0.3rem;">
+          <div><strong>1. How to Console Her:</strong> Hormones fluctuate monthly. If she feels low, offer a warm beverage, listen actively, and avoid saying she is overreacting.</div>
+          <div><strong>2. PCOD Care:</strong> Support her diet by keeping white sugar out of meals and replacing it with organic jaggery/cinnamon.</div>
+          <div><strong>3. Show Love:</strong> Remind her she is beautiful, assist with home tasks, and encourage restful sleep by 10:30 PM.</div>
+        </div>
       `;
     }
     
-    // Replace inner structure of waterCard
     if (!waterCard.dataset.originalHtml) {
       waterCard.dataset.originalHtml = waterCard.innerHTML;
     }
@@ -474,23 +480,29 @@ function renderHimDashboard() {
   const cycleCard = document.querySelector('.card-cycle');
   if (cycleCard) {
     const badge = cycleCard.querySelector('.card-badge');
-    if (badge) badge.innerText = "Her Current Phase";
+    if (badge) badge.innerText = partnerToken ? "Her Active Cycle State" : "Understanding Her 4 Phases 🌸";
     
     const phaseTitle = document.getElementById('dash-phase-name');
     const phaseDesc = document.getElementById('dash-phase-details');
     
     if (!partnerToken) {
-      phaseTitle.innerText = "Partner Sync Locked 🔒";
-      phaseDesc.innerText = "Please link your partner's Sync ID to view her active cycle phase and symptom predictions.";
+      phaseTitle.innerText = "General Support Mode";
+      phaseDesc.innerHTML = `
+        Female wellness operates in 4 distinct hormonal phases:<br/>
+        • <strong>Menstrual Phase (Day 1-5)</strong>: Estrogen drops. Offer warmth & cramp relief.<br/>
+        • <strong>Follicular Phase (Day 6-13)</strong>: Energy rises. Walk and active dates.<br/>
+        • <strong>Ovulation (Day 14-17)</strong>: Peak energy. High confidence.<br/>
+        • <strong>Luteal/PMS (Day 18-28)</strong>: Mood swings & bloating. Brew spearmint tea.
+      `;
       if (welcomeText) {
-        welcomeText.innerText = "Thank you for being here to support your partner. Link her ID to synchronize calendars and customize care guidelines.";
+        welcomeText.innerText = "Welcome to Sakhi Partner Mode. Review the general female health guides below, and link her Sync ID to see her actual logs.";
       }
     } else if (!sessionData.cycles || sessionData.cycles.length === 0) {
-      phaseTitle.innerText = "No cycle data logged yet 🌸";
-      phaseDesc.innerText = "Your partner hasn't logged her cycle dates yet. Ask her to log them in her app so you can sync here.";
+      phaseTitle.innerText = "No cycle logs synced 🌸";
+      phaseDesc.innerText = "Your partner hasn't logged her cycle dates in her app yet. Once she adds them, they will sync here instantly.";
       if (welcomeText) {
         const partnerName = userHabits.nickname || "partner";
-        welcomeText.innerText = `Connected with ${partnerName}. Once she logs her periods in her app, her cycles will sync here immediately!`;
+        welcomeText.innerText = `Connected with ${partnerName}. Awaiting cycle calculations from her device...`;
       }
     } else {
       const lastCycle = sessionData.cycles[sessionData.cycles.length - 1];
@@ -501,7 +513,7 @@ function renderHimDashboard() {
       
       const partnerName = userHabits.nickname || "partner";
       if (welcomeText) {
-        welcomeText.innerText = `Currently supporting ${partnerName} 🌸. Her logs and habits are synced below. Review her daily cycle phase details to care for her.`;
+        welcomeText.innerText = `Supporting ${partnerName} 🌸. Her real-time cycle status, diagnostics, and mood heatmap are synced below.`;
       }
       
       let phase = "";
@@ -509,16 +521,16 @@ function renderHimDashboard() {
       
       if (diffDays <= 5) {
         phase = "Menstrual Phase (Day 1-5) 🌸";
-        details = `She is on Day ${diffDays + 1}. Her estrogen is low. Assist her by cooking warm, iron-rich meals (like spinach dal) and preparing hot ginger tea.`;
+        details = `She is on Day ${diffDays + 1}. Estrogen is at its lowest. She is highly prone to pelvic cramps. Make sure to comfort her and provide heating patches.`;
       } else if (diffDays <= 13) {
         phase = "Follicular Phase (Day 6-13) 🌿";
-        details = `She is on Day ${diffDays + 1}. Her estrogen is rising. She has higher physical energy. Encourage her to eat sprouts and healthy fats (flaxseeds).`;
+        details = `She is on Day ${diffDays + 1}. Estrogen is rising. Her mood is positive and energy is high. Join her for walks and support healthy meal choices.`;
       } else if (diffDays <= 17) {
         phase = "Ovulation Phase (Day 14-17) ✨";
-        details = `She is on Day ${diffDays + 1}. She is in her peak fertility window. Offer her high-nutrient seeds. Great time to plan dates!`;
+        details = `She is on Day ${diffDays + 1}. Peak energy phase! Excellent time for active dates, showing extra affection, and serving nutrient-rich seeds.`;
       } else {
         phase = "Luteal / PMS Phase (Day 18-28) 🌙";
-        details = `She is on Day ${diffDays + 1}. Progesterone peaks. PMS might cause mood variations or bloating. Prepare spearmint tea and support her bedtime by 10:30 PM.`;
+        details = `She is on Day ${diffDays + 1}. Progesterone peaks then drops. Mood variations or bloating may occur. Console her warmly and prepare spearmint tea.`;
       }
 
       phaseTitle.innerText = phase;
@@ -526,24 +538,54 @@ function renderHimDashboard() {
     }
   }
 
-  // Update Streak Card
+  // Update Streak Card (Renamed to Sync Status / Partner Link widget)
   const streakCard = document.querySelector('.card-streak');
   if (streakCard) {
     const badge = streakCard.querySelector('.card-badge');
-    if (badge) badge.innerText = "Sync Status";
+    if (badge) badge.innerText = "Partner Sync Guard";
     
     const scoreVal = streakCard.querySelector('.streak-score');
-    if (scoreVal) {
-      scoreVal.innerHTML = partnerToken ? `<span style="color: var(--sage);">Connected</span>` : `<span style="color: var(--soft);">Pending Link</span>`;
-    }
-    
     const desc = streakCard.querySelector('p');
-    if (desc) {
-      desc.innerText = partnerToken ? "Dynamic connection active. Ovarian cycles are synced directly from her secure cloud database." : "Logs are kept completely offline until you link her partner ID.";
+    
+    if (partnerToken) {
+      if (scoreVal) scoreVal.innerHTML = `<span style="color: var(--sage); font-size: 1.8rem;">Synced 🔗</span>`;
+      if (desc) desc.innerText = `Connected to her live logs. View her menstrual forecasts and PCOD symptoms dynamically.`;
+    } else {
+      if (scoreVal) scoreVal.innerHTML = `
+        <div style="display: flex; gap: 0.4rem; margin-top: 0.5rem; align-items: center; width: 100%;">
+          <input type="text" id="dash-partner-id-input" placeholder="SAKHI-XXXX" style="padding: 0.4rem 0.6rem; font-size: 0.85rem; border-radius: 8px; border: 1.5px solid var(--border); text-transform: uppercase; width: 130px; height: 35px;"/>
+          <button class="btn-primary" onclick="connectPartnerFromDash()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 8px; box-shadow: none; height: 35px; white-space: nowrap;">Link Sync ID</button>
+        </div>
+      `;
+      if (desc) desc.innerHTML = `<small style="color: var(--soft);">Enter her Sync ID (found in her Dashboard tab) to sync diagnostics and custom support rules.</small>`;
     }
   }
 
   renderSymptomHeatmap();
+}
+
+async function connectPartnerFromDash() {
+  const inputVal = document.getElementById('dash-partner-id-input').value.trim().toUpperCase();
+  if (!inputVal.startsWith('SAKHI-')) {
+    alert("Invalid ID format. Partner Sync IDs must start with 'SAKHI-'");
+    return;
+  }
+  const partnerUser = inputVal.substring(6).toLowerCase();
+  
+  const res = await apiCall('/api/session', 'GET', null, partnerUser);
+  if (res) {
+    localStorage.setItem('sakhi_partner_token', partnerUser);
+    alert("Successfully linked with your partner! Syncing logs... 🌸");
+    
+    // Load habits profile of the partner to customize greetings
+    const habitRes = await apiCall('/api/habits');
+    if (habitRes && habitRes.habits) {
+      userHabits = habitRes.habits;
+    }
+    await loadSession();
+  } else {
+    alert("Failed to find a partner with that ID. Verify spelling and try again!");
+  }
 }
 
 function syncDashboardCyclePhase() {
