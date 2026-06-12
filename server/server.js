@@ -10,6 +10,9 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Start connecting to database immediately on boot (optimizes serverless cold starts)
+db.connectDb().catch(err => console.error("Database connection failed on boot:", err));
+
 app.use(cors());
 app.use(express.json());
 

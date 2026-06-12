@@ -127,12 +127,13 @@ async function loadSession() {
     document.body.classList.remove('him-mode');
   }
 
-  // Fetch session logs
-  const data = await apiCall('/api/session');
+  // Fetch session logs and user habits in parallel to optimize loading speed
+  const [data, habitRes] = await Promise.all([
+    apiCall('/api/session'),
+    apiCall('/api/habits')
+  ]);
   if (data) sessionData = data;
 
-  // Fetch user habits
-  const habitRes = await apiCall('/api/habits');
   if (habitRes && habitRes.habits) {
     userHabits = habitRes.habits;
     document.getElementById('habits-overlay').style.display = 'none';
