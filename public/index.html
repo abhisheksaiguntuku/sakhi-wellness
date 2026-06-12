@@ -34,6 +34,13 @@
           <label>Password</label>
           <input type="password" id="auth-password" placeholder="Enter secure key"/>
         </div>
+        <div class="form-group" id="auth-gender-group" style="display: none;">
+          <label>Account Type / Purpose</label>
+          <select id="auth-gender">
+            <option value="female">Track My Own Health (Female) 🌸</option>
+            <option value="male">Support My Partner (Male) 🙋‍♂️</option>
+          </select>
+        </div>
         <button class="btn-primary" style="width: 100%;" onclick="submitAuth()">Continue</button>
         
         <!-- Google OAuth Button container -->

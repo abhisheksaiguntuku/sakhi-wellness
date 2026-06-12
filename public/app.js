@@ -111,6 +111,22 @@ async function loadSession() {
   document.getElementById('logout-btn').style.display = 'inline-block';
   document.getElementById('user-display-tag').innerText = `Logged in: ${activeUser}`;
 
+  // Configure layout state based on account gender
+  const accountGender = localStorage.getItem('sakhi_user_gender') || 'female';
+  isHimMode = (accountGender === 'male');
+  
+  const himBtn = document.getElementById('him-toggle-btn');
+  if (himBtn) {
+    himBtn.style.display = 'none'; // Hide switching toggle for registered accounts
+  }
+  
+  if (isHimMode) {
+    document.body.classList.add('him-mode');
+    showForHimDashboard();
+  } else {
+    document.body.classList.remove('him-mode');
+  }
+
   // Fetch session logs
   const data = await apiCall('/api/session');
   if (data) sessionData = data;
@@ -202,11 +218,18 @@ function switchAuthTab(tab) {
   currentAuthTab = tab;
   document.getElementById('tab-login-btn').classList.toggle('active', tab === 'login');
   document.getElementById('tab-signup-btn').classList.toggle('active', tab === 'signup');
+  
+  // Show gender dropdown only for registration
+  const genderGroup = document.getElementById('auth-gender-group');
+  if (genderGroup) {
+    genderGroup.style.display = tab === 'signup' ? 'block' : 'none';
+  }
 }
 
 async function submitAuth() {
   const user = document.getElementById('auth-username').value.trim();
   const pass = document.getElementById('auth-password').value.trim();
+  const gender = document.getElementById('auth-gender').value;
   
   if (!user || !pass) {
     alert("Please enter both username and password!");
@@ -214,13 +237,26 @@ async function submitAuth() {
   }
 
   const path = currentAuthTab === 'login' ? '/api/auth/login' : '/api/auth/register';
-  const res = await apiCall(path, 'POST', { username: user, password: pass });
+  const body = currentAuthTab === 'login' ? { username: user, password: pass } : { username: user, password: pass, gender };
+  
+  const res = await apiCall(path, 'POST', body);
   
   if (res && res.success) {
     activeUser = user;
     userToken = user;
     localStorage.setItem('sakhi_auth_user', user);
     localStorage.setItem('sakhi_user_token', user);
+    
+    // Save account gender settings
+    const accountGender = res.gender || gender || 'female';
+    localStorage.setItem('sakhi_user_gender', accountGender);
+    
+    // Apply layout state
+    if (accountGender === 'male') {
+      isHimMode = true;
+    } else {
+      isHimMode = false;
+    }
     
     document.getElementById('auth-overlay').style.display = 'none';
     await loadSession();
@@ -235,6 +271,11 @@ function skipAuth() {
   document.getElementById('auth-overlay').style.display = 'none';
   document.getElementById('logout-btn').style.display = 'inline-block';
   document.getElementById('user-display-tag').innerText = "Offline Guest Profile";
+  
+  // Show switching toggle button for guest profiles to test both formats
+  const himBtn = document.getElementById('him-toggle-btn');
+  if (himBtn) himBtn.style.display = 'inline-block';
+  
   document.getElementById('habits-overlay').style.display = 'flex';
   renderDashboard();
 }

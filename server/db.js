@@ -25,6 +25,7 @@ const UserSchema = new mongoose.Schema({
   password: { type: String },
   googleId: { type: String },
   email: { type: String },
+  gender: { type: String, enum: ['female', 'male'], default: 'female' },
   habits: { type: UserHabitSchema, default: null }
 });
 
@@ -134,13 +135,13 @@ function writeDb(data) {
 }
 
 // 3. DATABASE ACCESS INTERFACE (Supports Mongo + JSON Fallback)
-async function registerUser(username, password, googleId = null, email = null) {
+async function registerUser(username, password, gender = 'female', googleId = null, email = null) {
   if (useMongo) {
     try {
       const exists = await UserModel.findOne({ username });
       if (exists) return { success: false, error: "Username already exists" };
       
-      const newUser = new UserModel({ username, password, googleId, email });
+      const newUser = new UserModel({ username, password, gender, googleId, email });
       await newUser.save();
       
       const newSession = new SessionModel({ username });
@@ -152,7 +153,7 @@ async function registerUser(username, password, googleId = null, email = null) {
   } else {
     const db = readDb();
     if (db.users[username]) return { success: false, error: "Username already exists" };
-    db.users[username] = { password, googleId, email, habits: null };
+    db.users[username] = { password, gender, googleId, email, habits: null };
     db.sessions[username] = { cycles: [], waterLogged: 0, waterStreak: 0, dailyStreak: 0, lastActiveDate: null, badges: [], checklist: {}, moodLogs: {}, journal: [] };
     writeDb(db);
     return { success: true };
@@ -193,7 +194,7 @@ async function loginUser(username, password) {
     try {
       const user = await UserModel.findOne({ username });
       if (!user || user.password !== password) return { success: false, error: "Invalid username or password" };
-      return { success: true };
+      return { success: true, gender: user.gender || 'female' };
     } catch (err) {
       return { success: false, error: err.message };
     }
@@ -201,7 +202,7 @@ async function loginUser(username, password) {
     const db = readDb();
     const user = db.users[username];
     if (!user || user.password !== password) return { success: false, error: "Invalid username or password" };
-    return { success: true };
+    return { success: true, gender: user.gender || 'female' };
   }
 }
 

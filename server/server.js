@@ -37,9 +37,9 @@ function getAuthUser(req) {
 
 // 1. AUTHENTICATION & LOGIN APIS
 app.post('/api/auth/register', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, gender } = req.body;
   if (!username || !password) return res.status(400).json({ error: "Username and password are required" });
-  const result = await db.registerUser(username, password);
+  const result = await db.registerUser(username, password, gender || 'female');
   res.json(result);
 });
 
