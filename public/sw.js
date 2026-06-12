@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sakhi-cache-v5';
+const CACHE_NAME = 'sakhi-cache-v6';
 const ASSETS = [
   '/',
   '/index.html',
@@ -30,10 +30,26 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Network-First strategy: Fetch from network first, update cache, and fallback to cache on network failure.
 self.addEventListener('fetch', (e) => {
+  // Ignore API requests
+  if (e.request.url.includes('/api/')) {
+    return;
+  }
+
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      return cachedResponse || fetch(e.request);
-    })
+    fetch(e.request)
+      .then((response) => {
+        if (response && response.status === 200 && e.request.method === 'GET') {
+          const responseCopy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseCopy);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        return caches.match(e.request);
+      })
   );
 });

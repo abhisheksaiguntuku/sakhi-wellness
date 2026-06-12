@@ -609,11 +609,24 @@ document.addEventListener('DOMContentLoaded', () => {
   startChecker();
   loadSession();
 
-  // Register PWA Service Worker
+  // Register PWA Service Worker with auto-update handling
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log("Service Worker registered successfully! 🛠️"))
+      .then((reg) => {
+        console.log("Service Worker registered successfully! 🛠️");
+        // Force checking for update immediately on every page refresh
+        reg.update();
+      })
       .catch((err) => console.error("Service Worker registration failed:", err));
+
+    // Listen for controller changes and reload page immediately to apply updates
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
   }
 });
 
@@ -1034,6 +1047,8 @@ const bseSteps = [
       <circle cx="122" cy="138" r="3" fill="#E8526A"/>
       <!-- Mirror reflection line -->
       <path d="M 35 35 L 50 35 L 35 50 Z" fill="#E8F5E9" opacity="0.5"/>
+      <!-- Scan line (horizontal laser effect) representing inspection -->
+      <line x1="25" y1="40" x2="175" y2="40" stroke="#E8526A" stroke-width="1.5" class="scan-beam-anim"/>
     </svg>`
   },
   {
@@ -1055,9 +1070,9 @@ const bseSteps = [
       <circle cx="78" cy="151" r="3" fill="#E8526A"/>
       <path d="M 104 148 C 112 165, 133 165, 138 148" fill="none" stroke="#222222" stroke-width="2"/>
       <circle cx="122" cy="151" r="3" fill="#E8526A"/>
-      <!-- Upward arrows to indicate movement -->
-      <path d="M 78 180 L 78 166 M 78 166 L 75 170 M 78 166 L 81 170" stroke="#E8526A" stroke-width="2" fill="none"/>
-      <path d="M 122 180 L 122 166 M 122 166 L 119 170 M 122 166 L 125 170" stroke="#E8526A" stroke-width="2" fill="none"/>
+      <!-- Upward arrows to indicate movement (animated) -->
+      <path d="M 78 180 L 78 166 M 78 166 L 75 170 M 78 166 L 81 170" stroke="#E8526A" stroke-width="2" fill="none" class="arrow-up-anim"/>
+      <path d="M 122 180 L 122 166 M 122 166 L 119 170 M 122 166 L 125 170" stroke="#E8526A" stroke-width="2" fill="none" class="arrow-up-anim"/>
     </svg>`
   },
   {
@@ -1079,8 +1094,8 @@ const bseSteps = [
       <path d="M 55 130 C 65 155, 88 155, 96 130" fill="none" stroke="#222222" stroke-width="2"/>
       <path d="M 104 130 C 114 155, 135 155, 140 130" fill="none" stroke="#222222" stroke-width="2"/>
       
-      <!-- Checking hand outline (touching the breast) -->
-      <g>
+      <!-- Checking hand outline (touching the breast) with scan movement -->
+      <g class="gravity-sag-anim">
         <!-- Arm & Hand outline -->
         <path d="M 125 155 Q 110 138 92 138 C 85 138, 78 140, 75 145" fill="none" stroke="#222222" stroke-width="2.5" stroke-linecap="round"/>
         <!-- Fingers pressing -->
@@ -1092,10 +1107,10 @@ const bseSteps = [
         <rect x="0" y="0" width="55" height="55" fill="#FFFFFF" stroke="#222222" stroke-width="1.5"/>
         <!-- Hand representation -->
         <path d="M 10 50 L 10 35 C 10 35, 12 20, 16 20 C 20 20, 21 35, 21 35 M 21 35 C 21 35, 23 15, 28 15 C 33 15, 33 35, 33 35 M 33 35 C 33 35, 35 18, 40 18 C 45 18, 44 38, 44 38 M 44 38 L 48 45 L 48 50" fill="none" stroke="#222222" stroke-width="1.5" stroke-linejoin="round"/>
-        <!-- 3 Highlight Circles on finger pads -->
-        <circle cx="16" cy="22" r="4" fill="none" stroke="#E8526A" stroke-width="1.5"/>
-        <circle cx="28" cy="17" r="4" fill="none" stroke="#E8526A" stroke-width="1.5"/>
-        <circle cx="40" cy="20" r="4" fill="none" stroke="#E8526A" stroke-width="1.5"/>
+        <!-- 3 Highlight Circles on finger pads (pulsing) -->
+        <circle cx="16" cy="22" r="4" fill="none" stroke="#E8526A" stroke-width="1.5" class="pulsing-target-node"/>
+        <circle cx="28" cy="17" r="4" fill="none" stroke="#E8526A" stroke-width="1.5" class="pulsing-target-node"/>
+        <circle cx="40" cy="20" r="4" fill="none" stroke="#E8526A" stroke-width="1.5" class="pulsing-target-node"/>
       </g>
     </svg>`
   },
@@ -1142,9 +1157,9 @@ const bseSteps = [
       <!-- Checking hand from opposite side sweeping underarm -->
       <path d="M 160 110 C 150 95, 135 90, 122 92" fill="none" stroke="#222222" stroke-width="2" stroke-linecap="round"/>
       <!-- Pulsing Node and pathway highlights -->
-      <circle cx="130" cy="65" r="8" fill="#E8526A" opacity="0.3"/>
+      <circle cx="130" cy="65" r="8" fill="#E8526A" opacity="0.3" class="pulsing-target-node"/>
       <circle cx="130" cy="65" r="3" fill="#E8526A"/>
-      <path d="M 135 55 Q 125 70, 130 85" fill="none" stroke="#E8526A" stroke-width="2" stroke-dasharray="3 3"/>
+      <path d="M 135 55 Q 125 70, 130 85" fill="none" stroke="#E8526A" stroke-width="2" stroke-dasharray="3 3" class="sweep-path-anim"/>
     </svg>`
   },
   {
@@ -1165,9 +1180,9 @@ const bseSteps = [
       <path d="M 90 140 Q 102 122, 115 140" fill="none" stroke="#222222" stroke-width="2"/>
       <!-- Hand behind head outline -->
       <path d="M 115 140 C 128 130, 138 110, 135 95" fill="none" stroke="#222222" stroke-width="2"/>
-      <!-- Checking Hand indicator -->
-      <circle cx="78" cy="130" r="5" fill="#E8526A" opacity="0.8"/>
-      <circle cx="78" cy="130" r="10" fill="none" stroke="#E8526A" stroke-width="1.5"/>
+      <!-- Checking Hand indicator with pulse ripple scanning -->
+      <circle cx="78" cy="130" r="5" fill="#E8526A" opacity="0.8" class="pulsing-bed-scan"/>
+      <circle cx="78" cy="130" r="10" fill="none" stroke="#E8526A" stroke-width="1.5" class="pulsing-bed-scan-ring" style="transform-origin: 78px 130px;"/>
     </svg>`
   },
   {
@@ -1182,8 +1197,8 @@ const bseSteps = [
       <!-- Nipple contour -->
       <path d="M 94 90 C 94 82, 106 82, 106 90" fill="none" stroke="#222222" stroke-width="2"/>
       
-      <!-- Squeezing Fingers Outline -->
-      <g>
+      <!-- Squeezing Fingers Outline with squeezing animation -->
+      <g class="fingers-squeeze-anim" style="transform-origin: 100px 90px;">
         <!-- Thumb -->
         <path d="M 65 72 Q 84 82, 92 90" stroke="#222222" stroke-width="3" fill="none" stroke-linecap="round"/>
         <!-- Index Finger -->

@@ -239,18 +239,22 @@ app.post('/api/doubt', async (req, res) => {
           messages: [
             {
               role: 'system',
-              content: `You are Sakhi, a warm, caring, and knowledgeable AI women's health companion. Explain simply without complex jargon, like an older sister. Avoid prescribing medications, recommend natural/ayurvedic habits first.
+              content: `You are Sakhi, a warm, conversational, and deeply empathetic AI women's health sister. Explain simply like a loving older sister. Avoid medical prescribing, recommending natural/ayurvedic habits first.
 User profile:
-- Name/Nickname: ${nickname}
+- Nickname: ${nickname}
 - Age: ${habits.age} years old
 - Wakes up at: ${habits.wakeTime}
 - Sleeps at: ${habits.sleepTime}
 - Eat frequency: ${mealsCount} meals a day (${habits.foodPreference})
-Always address the user by their name/nickname ("${nickname}") warmly instead of calling them generic terms. Adopt your suggestions to these routines. Provide exact times they should perform tasks (like exercise or tea). Acknowledge details warm and end with hope.`
+
+Style Instructions:
+- Dynamically vary your greetings! Do not always start with "Namaste". Mix it up: "Hey ${nickname}! 🌸", "Namaste, my dear ${nickname}", "Hello sweet ${nickname}", "Oh ${nickname}, I hear you!", "Hi ${nickname}, I'm here for you! 💛".
+- NEVER output generic boilerplate structures or repetitive skeletons. Every message should feel freshly written, natural, and friendly.
+- Directly weave exact times for suggestions matching their waking time of ${habits.wakeTime} and sleeping time of ${habits.sleepTime}. Acknowledge details warmly and end with a positive word of hope.`
             },
             { role: 'user', content: question }
           ],
-          temperature: 0.7
+          temperature: 0.8
         })
       });
       const data = await response.json();
@@ -262,21 +266,43 @@ Always address the user by their name/nickname ("${nickname}") warmly instead of
     }
   }
 
-  // Fallback Rule-based dynamic NLP if Groq API keys are not supplied
+  // Fallback Dynamic NLP generator if Groq API keys are not active/configured
+  const greetings = [
+    `Hey ${nickname}! 🌸`,
+    `Namaste, my dear ${nickname}! 🙏`,
+    `Oh ${nickname}, I am here to listen. 💛`,
+    `Hello sweet ${nickname}! 🌸`,
+    `Hi ${nickname}, let's chat about this. 🌿`
+  ];
+  
+  const selectedGreeting = greetings[Math.floor(Math.random() * greetings.length)];
   let reply = "";
   const query = question.toLowerCase();
-  
+
   if (query.includes("medicine") || query.includes("pill") || query.includes("tablet")) {
-    reply = `${nickname}, I notice you are asking about prescription medicines. As your health companion, I cannot recommend chemical drugs or dictate dosages. However, based on your lifestyle (sleeping around ${habits.sleepTime} and waking around ${habits.wakeTime}), natural remedies fit beautifully. For instance, taking Ashwagandha powder in warm milk 30 minutes before your bedtime (around ${sleepHr - 1}:30 PM) is a safe adaptogen that reduces cortisol. Let's start there, and if you need pills, let's connect you with a doctor. 🌸`;
+    const responses = [
+      `${selectedGreeting} I understand you're asking about prescription pills, but as your wellness sister, I don't recommend pharmaceuticals or drug dosages. For a natural way to lower cortisol, try drinking warm milk with a pinch of Ashwagandha around ${sleepHr - 1}:30 PM (before your sleep at ${habits.sleepTime}). Let's start with natural adaptogens!`,
+      `${selectedGreeting} It's always best to be gentle with our bodies. I can't advise on chemical medicines, but if you're feeling stressed, taking Ashwagandha with warm milk at night (around ${sleepHr - 1}:30 PM) is a wonderful Ayurvedic ritual that matches your sleep schedule. Would you like to try that?`
+    ];
+    reply = responses[Math.floor(Math.random() * responses.length)];
   } else if (query.includes("food") || query.includes("eat") || query.includes("diet")) {
-    reply = `Since you eat ${mealsCount} meals a day and prefer a ${habits.foodPreference} diet, here is a custom meal timing pattern for you, ${nickname}:
-- **First Meal (Breakfast)**: Have a high-protein breakfast within 1.5 hours of waking up (around ${wakeHr + 1}:00 AM). Moong sprouts or ragi malt are excellent.
-- **Midday (Lunch)**: Eat a rich green leaf salad and fiber-rich dal around 1:00 PM.
-- **Final Meal (Dinner)**: Make sure it's light and low in sodium, consumed at least 3 hours before your bedtime (around ${sleepHr - 3}:00 PM). Avoid white sugar completely to manage insulin resistance! 🍽️`;
+    const responses = [
+      `${selectedGreeting} Let's tailor your meals! Since you prefer a ${habits.foodPreference} diet, try a fiber-filled breakfast (like sprouts) at ${wakeHr + 1}:00 AM (1 hour after waking). Have a leafy lunch at 1 PM, and a light dinner around ${sleepHr - 3}:00 PM to avoid insulin spikes before your bedtime.`,
+      `${selectedGreeting} Food is medicine! For your ${habits.foodPreference} preference, stabilizing glucose is key. Try your morning meal around ${wakeHr + 1}:00 AM, dal and fresh greens at lunch, and lock in your light dinner by ${sleepHr - 3}:00 PM. Cut out white sugar completely to protect your ovaries!`
+    ];
+    reply = responses[Math.floor(Math.random() * responses.length)];
   } else if (query.includes("exercise") || query.includes("workout") || query.includes("walk")) {
-    reply = `For your schedule, ${nickname}, consistency is everything. Since you wake at ${habits.wakeTime}, we want to avoid high-intensity workouts immediately. Instead, do 10 minutes of gentle morning Yoga (like butterfly pose) around ${wakeHr}:30 AM. Later in the day, around 4:00 PM or 5:00 PM, add a 30-minute steady walk to lower insulin resistance. This is perfect for your routine and stabilizes blood sugar before dinner! 🧘`;
+    const responses = [
+      `${selectedGreeting} Moving is wonderful for PCOD! Since you wake up at ${habits.wakeTime}, do a gentle 10-minute stretching flow around ${wakeHr}:30 AM. Later, go for a peaceful 30-minute brisk walk at 4:30 PM. It works wonders for insulin sensitivity.`,
+      `${selectedGreeting} Let's design a quick routine. Start with a light butterfly stretch at ${wakeHr}:45 AM, and wind down in the evening with a 30-minute walk before sunset. Keeping it low-impact lowers your cortisol levels!`
+    ];
+    reply = responses[Math.floor(Math.random() * responses.length)];
   } else {
-    reply = `Here is a custom insight for you, ${nickname}: Balancing PCOD is about matching daily steps to your circadian clock (waking at ${habits.wakeTime} and sleeping at ${habits.sleepTime}). Try drinking 2 cups of spearmint tea daily—one in the morning after breakfast, and one in the evening around 5 PM. It reduces face hair growth and balances androgens. You're doing amazing! 🌸`;
+    const responses = [
+      `${selectedGreeting} Balancing your hormones is about aligning with your body's rhythm. Since you sleep at ${habits.sleepTime}, sipping warm spearmint tea in the evening (around 5:30 PM) is a lovely ritual to reduce androgens and skin breakouts.`,
+      `${selectedGreeting} I'm thinking about you. A simple Ayurvedic step is to brew warm spearmint tea after breakfast. It aligns beautifully with your waking time of ${habits.wakeTime} and helps reduce androgen-induced facial hair. You've got this!`
+    ];
+    reply = responses[Math.floor(Math.random() * responses.length)];
   }
 
   res.json({ reply });
