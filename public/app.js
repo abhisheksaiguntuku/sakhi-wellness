@@ -51,6 +51,12 @@ function showPage(pageId) {
 
   if (pageId === 'dashboard') {
     renderDashboard();
+  } else if (pageId === 'checker') {
+    if (isHimMode) {
+      renderHimCareManual();
+    } else {
+      startChecker();
+    }
   } else if (pageId === 'remedies') {
     renderRemedies();
   } else if (pageId === 'diet') {
@@ -147,7 +153,7 @@ async function loadSession() {
     }
   } else {
     // Force onboarding habits questionnaire if registering new profile AND not in Him Mode
-    if (isHimMode) {
+    if (isHimMode || localStorage.getItem('sakhi_habits_dismissed') === 'true') {
       document.getElementById('habits-overlay').style.display = 'none';
     } else {
       document.getElementById('habits-overlay').style.display = 'flex';
@@ -162,6 +168,28 @@ async function loadSession() {
 function personalizeGreetings() {
   const nickname = userHabits.nickname || 'sister';
   
+  if (isHimMode) {
+    const chatBox = document.getElementById('chat-box');
+    if (chatBox) {
+      chatBox.innerHTML = `
+        <div class="msg msg-bot">
+          <div class="msg-bubble">
+            Hello, support partner! I am Sakhi. Ask me how to make soothing teas, prepare warm heating pads, or support your partner during PMS swings. 🌸
+          </div>
+        </div>
+      `;
+    }
+    const emergencyTitle = document.querySelector('#emergency-modal h3');
+    if (emergencyTitle) {
+      emergencyTitle.innerHTML = `How to Support Her. 💛`;
+    }
+    const emergencyDesc = document.querySelector('#emergency-modal p');
+    if (emergencyDesc) {
+      emergencyDesc.innerHTML = `If she is overwhelmed, crying, or in severe distress: listen actively without trying to correct her, keep arguments at zero, prepare a warm beverage, and let her rest. High cortisol can trigger emotional swings.`;
+    }
+    return;
+  }
+
   // 1. Initial chat bubble greeting
   const chatBox = document.getElementById('chat-box');
   if (chatBox) {
@@ -331,6 +359,7 @@ async function submitHabitsProfile() {
 
   const res = await apiCall('/api/habits', 'POST', { habits: userHabits });
   if (res && res.success) {
+    localStorage.setItem('sakhi_habits_dismissed', 'true');
     document.getElementById('habits-overlay').style.display = 'none';
     renderDashboard();
     personalizeGreetings();
@@ -684,7 +713,7 @@ async function sendChatMessage() {
   inputEl.value = "";
   appendChatBubble(query, 'user');
   
-  const chatResponse = await apiCall('/api/doubt', 'POST', { question: query });
+  const chatResponse = await apiCall('/api/doubt', 'POST', { question: query, isHimMode: isHimMode });
   const responseText = chatResponse ? chatResponse.reply : "Connection error. Ask Sakhi again soon! 🌸";
   
   setTimeout(() => {
@@ -831,22 +860,26 @@ document.addEventListener('DOMContentLoaded', () => {
   startChecker();
   loadSession();
 
-  // Register PWA Service Worker with auto-update handling
+  // Unregister service worker and clear caches to solve browser caching issues
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-      .then((reg) => {
-        console.log("Service Worker registered successfully! 🛠️");
-        // Force checking for update immediately on every page refresh
-        reg.update();
-      })
-      .catch((err) => console.error("Service Worker registration failed:", err));
-
-    // Listen for controller changes and reload page immediately to apply updates
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload();
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      let unregisteredAny = false;
+      for (let registration of registrations) {
+        registration.unregister();
+        unregisteredAny = true;
+      }
+      if (unregisteredAny) {
+        if ('caches' in window) {
+          caches.keys().then((names) => {
+            for (let name of names) {
+              caches.delete(name);
+            }
+          });
+        }
+        console.log("Outdated caches cleared successfully! Reloading page...");
+        setTimeout(() => {
+          window.location.reload(true);
+        }, 300);
       }
     });
   }
@@ -1995,7 +2028,7 @@ function toggleForHimMode() {
     }
 
     // Restore any hidden privacy content
-    const privatePages = ['cycle', 'mental', 'breast', 'checker'];
+    const privatePages = ['cycle', 'mental', 'breast'];
     privatePages.forEach(pId => {
       const pageEl = document.getElementById(`page-${pId}`);
       if (pageEl && pageEl.dataset.originalHtml) {
@@ -2051,7 +2084,7 @@ function showForHimDashboard() {
 }
 
 function checkPartnerPrivacy(pageId) {
-  const privatePages = ['cycle', 'mental', 'breast', 'checker'];
+  const privatePages = ['cycle', 'mental', 'breast'];
   if (isHimMode && privatePages.includes(pageId) && !localStorage.getItem('sakhi_partner_token')) {
     const pageEl = document.getElementById(`page-${pageId}`);
     if (pageEl) {
@@ -2118,13 +2151,52 @@ function copyPartnerId() {
 }
 
 function openProfileSettings() {
-  document.getElementById('onboard-nickname').value = userHabits.nickname || "";
+  const isHim = isHimMode;
+  
+  // Title & Subtitle updates
+  const headerTitle = document.querySelector('#habits-overlay h2');
+  const headerDesc = document.querySelector('#habits-overlay p');
+  const nicknameLabel = document.querySelector('#habits-overlay label[for="onboard-nickname"]') || document.querySelector('#habits-overlay label');
+  
+  // Find fields to hide
+  const wakeGroup = document.getElementById('onboard-wake').closest('.form-group');
+  const sleepGroup = document.getElementById('onboard-sleep').closest('.form-group');
+  const mealsGroup = document.getElementById('onboard-meals').closest('.form-group');
+  const prefGroup = document.getElementById('onboard-preference').closest('.form-group');
+  
+  if (isHim) {
+    if (headerTitle) headerTitle.innerText = "Customize Support Profile 🙋‍♂️";
+    if (headerDesc) headerDesc.innerText = "Personalize your support nickname and location details.";
+    if (nicknameLabel) nicknameLabel.innerText = "Your Name / Nickname";
+    
+    if (wakeGroup) wakeGroup.style.display = 'none';
+    if (sleepGroup) sleepGroup.style.display = 'none';
+    if (mealsGroup) mealsGroup.style.display = 'none';
+    if (prefGroup) prefGroup.style.display = 'none';
+  } else {
+    if (headerTitle) headerTitle.innerText = "Customize Your Companion 🌸";
+    if (headerDesc) headerDesc.innerText = "Tell us about your routines to automatically personalize your food, activity, and Ayurvedic checklist.";
+    if (nicknameLabel) nicknameLabel.innerText = "What should we call you? (Your Nickname)";
+    
+    if (wakeGroup) wakeGroup.style.display = 'block';
+    if (sleepGroup) sleepGroup.style.display = 'block';
+    if (mealsGroup) mealsGroup.style.display = 'block';
+    if (prefGroup) prefGroup.style.display = 'block';
+  }
+
+  // Pre-fill fields
+  let nicknameVal = userHabits.nickname || "";
+  if (isHim && (nicknameVal === 'sister' || !nicknameVal)) {
+    nicknameVal = "support partner";
+  }
+  document.getElementById('onboard-nickname').value = nicknameVal;
   document.getElementById('onboard-wake').value = userHabits.wakeTime || "06:30";
   document.getElementById('onboard-sleep').value = userHabits.sleepTime || "22:30";
   document.getElementById('onboard-meals').value = userHabits.meals || "3";
   document.getElementById('onboard-preference').value = userHabits.foodPreference || "veg";
   document.getElementById('onboard-age').value = userHabits.age || "23";
   document.getElementById('onboard-location').value = userHabits.location || "Delhi";
+  
   document.getElementById('habits-overlay').style.display = 'flex';
 }
 
@@ -2195,7 +2267,7 @@ const yogaPoses = {
       "Keep your big toes touching and heels slightly parted.",
       "Sit back completely on the cushion of your heels, resting hands on knees."
     ],
-    image: "https://media.giphy.com/media/l3vR1uqhS4zH6QWGY/giphy.gif",
+    image: "yoga_vajrasana.gif",
     svg: `<svg viewBox="0 0 500 150" class="yoga-svg-art" width="100%" height="100%">
       <rect x="5" y="5" width="490" height="140" rx="12" fill="#FFF0F2" stroke="#FFF0F2" stroke-width="1.5"/>
       <!-- Connecting dashed path -->
@@ -2281,7 +2353,7 @@ const yogaPoses = {
       "Exhale and fold your torso forward over your thighs.",
       "Rest your forehead on the floor and extend your arms forward."
     ],
-    image: "https://media.giphy.com/media/U8q8JdO559kX1dJ35M/giphy.gif",
+    image: "yoga_balasana.gif",
     svg: `<svg viewBox="0 0 500 150" class="yoga-svg-art" width="100%" height="100%">
       <rect x="5" y="5" width="490" height="140" rx="12" fill="#FFF0F2" stroke="#FFF0F2" stroke-width="1.5"/>
       <line x1="60" y1="110" x2="440" y2="110" stroke="#D0D0D0" stroke-width="1.5" stroke-dasharray="3 3"/>
@@ -2336,7 +2408,7 @@ const yogaPoses = {
       "Clasp your feet firmly with both hands.",
       "Gently flap knees up and down while keeping spine straight."
     ],
-    image: "https://media.giphy.com/media/26mkaHWJglqMIsLqE/giphy.gif",
+    image: "yoga_butterfly.gif",
     svg: `<svg viewBox="0 0 500 150" class="yoga-svg-art" width="100%" height="100%">
       <rect x="5" y="5" width="490" height="140" rx="12" fill="#FFF0F2" stroke="#FFF0F2" stroke-width="1.5"/>
       <line x1="60" y1="110" x2="440" y2="110" stroke="#D0D0D0" stroke-width="1.5" stroke-dasharray="3 3"/>
@@ -2392,7 +2464,7 @@ const yogaPoses = {
       "Exhale, arch spine up toward ceiling, tuck chin to chest (Cat).",
       "Flow between both shapes matching your breath."
     ],
-    image: "https://media.giphy.com/media/5O2J8EXCZ41S3nJ2sF/giphy.gif",
+    image: "yoga_catcow.gif",
     svg: `<svg viewBox="0 0 500 150" class="yoga-svg-art" width="100%" height="100%">
       <rect x="5" y="5" width="490" height="140" rx="12" fill="#FFF0F2" stroke="#FFF0F2" stroke-width="1.5"/>
       <line x1="60" y1="110" x2="440" y2="110" stroke="#D0D0D0" stroke-width="1.5" stroke-dasharray="3 3"/>
@@ -2549,7 +2621,7 @@ const trainerExercises = {
   squats: {
     title: "Gentle Bodyweight Squats 🏃‍♀️",
     benefit: "Strengthens pelvic floor & stabilizes insulin levels.",
-    gif: "https://media.giphy.com/media/GVEyJmILvn6vrvsSNaz/giphy.gif",
+    gif: "ex_squats.gif",
     svg: `<svg viewBox="0 0 500 150" class="trainer-svg-art" width="100%" height="100%">
       <rect x="5" y="5" width="490" height="140" rx="12" fill="#E8F5E9" stroke="#E8F5E9" stroke-width="1.5"/>
       <line x1="60" y1="110" x2="440" y2="110" stroke="#C8E6C9" stroke-width="1.5" stroke-dasharray="3 3"/>
@@ -2611,7 +2683,7 @@ const trainerExercises = {
   stretch: {
     title: "Standing Hamstring Stretch 🏃‍♀️",
     benefit: "Releases lower back tightness and improves flexibility.",
-    gif: "https://media.giphy.com/media/3o7TKoWXmFHyN3N3Ny/giphy.gif",
+    gif: "ex_hamstring.gif",
     svg: `<svg viewBox="0 0 500 150" class="trainer-svg-art" width="100%" height="100%">
       <rect x="5" y="5" width="490" height="140" rx="12" fill="#E8F5E9" stroke="#E8F5E9" stroke-width="1.5"/>
       <line x1="60" y1="110" x2="440" y2="110" stroke="#C8E6C9" stroke-width="1.5" stroke-dasharray="3 3"/>
@@ -2669,7 +2741,7 @@ const trainerExercises = {
   rolls: {
     title: "Shoulder & Neck Rolls 🏃‍♀️",
     benefit: "Releases upper body stress and relieves desk fatigue.",
-    gif: "https://media.giphy.com/media/lT4z3OQYk3WJ3sL7gR/giphy.gif",
+    gif: "ex_shoulder.gif",
     svg: `<svg viewBox="0 0 500 150" class="trainer-svg-art" width="100%" height="100%">
       <rect x="5" y="5" width="490" height="140" rx="12" fill="#E8F5E9" stroke="#E8F5E9" stroke-width="1.5"/>
       <line x1="60" y1="110" x2="440" y2="110" stroke="#C8E6C9" stroke-width="1.5" stroke-dasharray="3 3"/>
@@ -2732,7 +2804,7 @@ const trainerExercises = {
   marching: {
     title: "Brisk Low-Impact Marching 🏃‍♀️",
     benefit: "Improves overall circulation and boosts insulin response.",
-    gif: "https://media.giphy.com/media/5e3h2S2YQ04q26F22L/giphy.gif",
+    gif: "ex_marching.gif",
     svg: `<svg viewBox="0 0 500 150" class="trainer-svg-art" width="100%" height="100%">
       <rect x="5" y="5" width="490" height="140" rx="12" fill="#E8F5E9" stroke="#E8F5E9" stroke-width="1.5"/>
       <line x1="60" y1="110" x2="440" y2="110" stroke="#C8E6C9" stroke-width="1.5" stroke-dasharray="3 3"/>
@@ -2831,7 +2903,7 @@ function switchTrainerExercise(exName) {
 
 // Hide/Show and rename sidebar links dynamically based on Male/Female mode
 function configureSidebarForGender() {
-  const himPages = ['dashboard', 'remedies', 'diet', 'comfort', 'doctor'];
+  const himPages = ['dashboard', 'checker', 'remedies', 'diet', 'comfort', 'doctor'];
   document.querySelectorAll('.sidebar-btn').forEach(btn => {
     const pageId = btn.getAttribute('data-page');
     if (!pageId) return; // ignore footer buttons
@@ -2841,6 +2913,7 @@ function configureSidebarForGender() {
         btn.style.display = 'flex';
         // Customize text for Him Mode
         if (pageId === 'dashboard') btn.innerHTML = "🙋‍♂️ Partner Care Dashboard";
+        if (pageId === 'checker') btn.innerHTML = "🙋‍♂️ How to Care & Console";
         if (pageId === 'remedies') btn.innerHTML = "🌿 Ayurvedic Care for Her";
         if (pageId === 'diet') btn.innerHTML = "🍽️ Cook / Diet for Her";
         if (pageId === 'comfort') btn.innerHTML = "🌸 Soothing & Yoga Guide";
@@ -2869,6 +2942,296 @@ function configureSidebarForGender() {
     }
   });
 }
+
+function renderHimCareManual() {
+  const pageContainer = document.getElementById('page-checker');
+  if (!pageContainer) return;
+
+  const partnerToken = localStorage.getItem('sakhi_partner_token');
+  let syncedBanner = "";
+
+  if (partnerToken && sessionData.cycles && sessionData.cycles.length > 0) {
+    const lastCycle = sessionData.cycles[sessionData.cycles.length - 1];
+    const lastStart = new Date(lastCycle.startDate);
+    const today = new Date();
+    const diffTime = Math.abs(today - lastStart);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) % (lastCycle.cycleLength || 28);
+    const partnerName = userHabits.nickname || "Priya";
+
+    let phaseAdvice = "";
+    if (diffDays <= 5) {
+      phaseAdvice = `
+        <div class="phase-sync-alert" style="background: var(--rose-pale); border: 1.5px solid var(--rose-light); padding: 1.25rem; border-radius: 16px; margin-bottom: 1.5rem; box-shadow: var(--shadow);">
+          <h4 style="color: var(--rose); margin-bottom: 0.35rem;">🔔 Live Phase Alert: Menstrual Phase (Day ${diffDays + 1})</h4>
+          <p style="font-size: 0.88rem; color: var(--charcoal); line-height: 1.5; margin: 0;">
+            <strong>${partnerName}</strong> is on Day ${diffDays + 1} of her cycle. Her estrogen is at its lowest, and she is highly prone to pelvic cramps and body fatigue. 
+            <strong>Focus on:</strong> Comfort, hot compress, brewing warm herbal teas, and giving her complete physical rest.
+          </p>
+        </div>
+      `;
+    } else if (diffDays <= 13) {
+      phaseAdvice = `
+        <div class="phase-sync-alert" style="background: var(--sage-light); border: 1.5px solid var(--sage); padding: 1.25rem; border-radius: 16px; margin-bottom: 1.5rem; box-shadow: var(--shadow);">
+          <h4 style="color: var(--sage); margin-bottom: 0.35rem;">🔔 Live Phase Alert: Follicular Phase (Day ${diffDays + 1})</h4>
+          <p style="font-size: 0.88rem; color: var(--charcoal); line-height: 1.5; margin: 0;">
+            <strong>${partnerName}</strong> is on Day ${diffDays + 1} of her cycle. Energy is climbing and mood is positive.
+            <strong>Focus on:</strong> Fun walks together, outdoor activities, and eating healthy low-GI foods.
+          </p>
+        </div>
+      `;
+    } else if (diffDays <= 17) {
+      phaseAdvice = `
+        <div class="phase-sync-alert" style="background: #FFFDE7; border: 1.5px solid var(--gold); padding: 1.25rem; border-radius: 16px; margin-bottom: 1.5rem; box-shadow: var(--shadow);">
+          <h4 style="color: var(--gold); margin-bottom: 0.35rem;">🔔 Live Phase Alert: Ovulation (Day ${diffDays + 1})</h4>
+          <p style="font-size: 0.88rem; color: var(--charcoal); line-height: 1.5; margin: 0;">
+            <strong>${partnerName}</strong> is on Day ${diffDays + 1} of her cycle. High confidence and energetic mood.
+            <strong>Focus on:</strong> Quality time, outings, showing affection, and healthy nutrient-rich seeds.
+          </p>
+        </div>
+      `;
+    } else {
+      phaseAdvice = `
+        <div class="phase-sync-alert" style="background: var(--plum-pale); border: 1.5px solid var(--plum-light); padding: 1.25rem; border-radius: 16px; margin-bottom: 1.5rem; box-shadow: var(--shadow);">
+          <h4 style="color: var(--plum); margin-bottom: 0.35rem;">🔔 Live Phase Alert: Luteal / PMS Phase (Day ${diffDays + 1})</h4>
+          <p style="font-size: 0.88rem; color: var(--charcoal); line-height: 1.5; margin: 0;">
+            <strong>${partnerName}</strong> is on Day ${diffDays + 1} of her cycle. Progesterone is dropping, which triggers mood shifts, anxiety, bloating, and food cravings. 
+            <strong>Focus on:</strong> Comfort, listening without judgment, keeping arguments at zero, and brewing spearmint tea at 5:30 PM.
+          </p>
+        </div>
+      `;
+    }
+    syncedBanner = phaseAdvice;
+  } else {
+    syncedBanner = `
+      <div class="phase-sync-alert" style="background: var(--cream); border: 1.5px solid var(--border); padding: 1.25rem; border-radius: 16px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; box-shadow: var(--shadow);">
+        <div style="flex: 1; min-width: 250px;">
+          <h4 style="color: var(--plum); margin-bottom: 0.2rem;">🔒 Partner Sync is Offline</h4>
+          <p style="font-size: 0.82rem; color: var(--mid); margin: 0;">Link her Sync ID in the dashboard to see her real-time cycle phase alerts and personalized support actions.</p>
+        </div>
+        <button class="btn-secondary" onclick="showPage('dashboard')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Sync Now</button>
+      </div>
+    `;
+  }
+
+  pageContainer.innerHTML = `
+    <div class="section-header">
+      <h2>🙋‍♂️ How to Care & Console Her</h2>
+      <p>A support manual designed for men to understand her PCOD symptoms, console her during tough days, treat her problems, and show unconditional love.</p>
+    </div>
+
+    ${syncedBanner}
+
+    <!-- PARTNER CHECKLIST CARD -->
+    <div class="card-checklist" style="background: white; border-radius: 20px; padding: 1.75rem; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 2rem;">
+      <h3 style="font-family: var(--font-serif); color: var(--plum); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span>🎯 Daily Support Checklist</span>
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--mid); margin-bottom: 1.25rem;">Small actions make a big difference. Check off what you did to care for her today:</p>
+      
+      <div class="partner-check-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; background: var(--cream); padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid var(--border); font-size: 0.88rem; color: var(--charcoal); transition: all 0.2s;" class="partner-chk-lbl">
+          <input type="checkbox" id="chk-tea" style="margin-top: 0.15rem;" onchange="togglePartnerCheck(this)"/>
+          <div>
+            <strong>Brewed Soothing Tea</strong>
+            <small style="display: block; color: var(--soft); font-size: 0.75rem; margin-top: 0.1rem;">Ginger tea for cramps, or Spearmint tea for hormone spikes.</small>
+          </div>
+        </label>
+        
+        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; background: var(--cream); padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid var(--border); font-size: 0.88rem; color: var(--charcoal); transition: all 0.2s;" class="partner-chk-lbl">
+          <input type="checkbox" id="chk-arguments" style="margin-top: 0.15rem;" onchange="togglePartnerCheck(this)"/>
+          <div>
+            <strong>Kept Arguments at Zero</strong>
+            <small style="display: block; color: var(--soft); font-size: 0.75rem; margin-top: 0.1rem;">Avoided dry debates. Offered a hug or validation instead of reacting.</small>
+          </div>
+        </label>
+        
+        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; background: var(--cream); padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid var(--border); font-size: 0.88rem; color: var(--charcoal); transition: all 0.2s;" class="partner-chk-lbl">
+          <input type="checkbox" id="chk-comfort" style="margin-top: 0.15rem;" onchange="togglePartnerCheck(this)"/>
+          <div>
+            <strong>Prepared Warm Comfort</strong>
+            <small style="display: block; color: var(--soft); font-size: 0.75rem; margin-top: 0.1rem;">Got the heating bag ready or massaged her lower back/shoulders.</small>
+          </div>
+        </label>
+        
+        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; background: var(--cream); padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid var(--border); font-size: 0.88rem; color: var(--charcoal); transition: all 0.2s;" class="partner-chk-lbl">
+          <input type="checkbox" id="chk-compliment" style="margin-top: 0.15rem;" onchange="togglePartnerCheck(this)"/>
+          <div>
+            <strong>Fought Insecurity</strong>
+            <small style="display: block; color: var(--soft); font-size: 0.75rem; margin-top: 0.1rem;">PCOD causes facial hair/acne. Reassured her she looks beautiful.</small>
+          </div>
+        </label>
+        
+        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; background: var(--cream); padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid var(--border); font-size: 0.88rem; color: var(--charcoal); transition: all 0.2s;" class="partner-chk-lbl">
+          <input type="checkbox" id="chk-sugar" style="margin-top: 0.15rem;" onchange="togglePartnerCheck(this)"/>
+          <div>
+            <strong>Insulin Guard Support</strong>
+            <small style="display: block; color: var(--soft); font-size: 0.75rem; margin-top: 0.1rem;">Helped her avoid white sugar/maida. Shared a low-GI snack/meal.</small>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; background: var(--cream); padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid var(--border); font-size: 0.88rem; color: var(--charcoal); transition: all 0.2s;" class="partner-chk-lbl">
+          <input type="checkbox" id="chk-walk" style="margin-top: 0.15rem;" onchange="togglePartnerCheck(this)"/>
+          <div>
+            <strong>Mobility Evening Walk</strong>
+            <small style="display: block; color: var(--soft); font-size: 0.75rem; margin-top: 0.1rem;">Walked together for 20-30 minutes to reduce cortisol and stress.</small>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- SYMPTOM DECODER SECTION -->
+    <h3 style="font-family: var(--font-serif); color: var(--plum); margin-bottom: 1rem;">🙋‍♂️ Interactive PCOD Symptom Decoder</h3>
+    <p style="font-size: 0.9rem; color: var(--mid); margin-bottom: 1.5rem;">Click on any PCOD issue below to learn what she goes through and how you can treat, console, and support her:</p>
+    
+    <div class="decoder-accordion" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 3rem;">
+      
+      <!-- ITEM 1: CRAMPS -->
+      <div class="accordion-item" style="background: white; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow);">
+        <button onclick="toggleAccordion('dec-cramps')" style="width: 100%; text-align: left; padding: 1.25rem 1.5rem; background: none; border: none; font-size: 1.1rem; font-weight: 600; color: var(--plum); display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          <span style="display: flex; align-items: center; gap: 0.75rem;"><span>🩸</span> Period Cramps & Lower Back Pain</span>
+          <span id="icon-dec-cramps" style="font-size: 1.2rem; transition: transform 0.2s;">+</span>
+        </button>
+        <div id="body-dec-cramps" style="display: none; padding: 0 1.5rem 1.5rem 1.5rem; border-top: 1px solid var(--border); background: var(--cream-pale);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+            <div>
+              <h5 style="color: var(--rose); font-weight: 700; margin-bottom: 0.4rem;">👩 Her Perspective (What she feels)</h5>
+              <p style="font-size: 0.85rem; color: var(--charcoal); line-height: 1.5; margin: 0;">During menstruation, the uterus contracts strongly to shed its lining. PCOD can cause irregular cycle build-ups, leading to thicker linings and excruciating, stabbing pelvic spasms. This radiating pain causes cold sweat, nausea, and deep lower back throbbing.</p>
+            </div>
+            <div>
+              <h5 style="color: var(--plum); font-weight: 700; margin-bottom: 0.4rem;">🙋‍♂️ How to Care, Console & Treat Her</h5>
+              <ul style="font-size: 0.85rem; color: var(--charcoal); padding-left: 1.2rem; line-height: 1.5; display: flex; flex-direction: column; gap: 0.3rem; margin: 0;">
+                <li><strong>Console:</strong> Do not tell her "it is just standard pain." Acknowledge her discomfort and let her rest. Give her a gentle back or foot massage.</li>
+                <li><strong>Treat & Cure:</strong> Boil crushed fresh ginger in water for 5 minutes and serve it hot. Brew it 3 times daily.</li>
+                <li><strong>Comfort:</strong> Get her hot water bag ready, or stick a thermal cramp patch onto her clothing. Encourage her to rest in <strong>Balasana (Child's Pose)</strong>.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ITEM 2: MOOD SWINGS -->
+      <div class="accordion-item" style="background: white; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow);">
+        <button onclick="toggleAccordion('dec-mood')" style="width: 100%; text-align: left; padding: 1.25rem 1.5rem; background: none; border: none; font-size: 1.1rem; font-weight: 600; color: var(--plum); display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          <span style="display: flex; align-items: center; gap: 0.75rem;"><span>⚡</span> Mood Swings, Tears & Anxiety spikes</span>
+          <span id="icon-dec-mood" style="font-size: 1.2rem; transition: transform 0.2s;">+</span>
+        </button>
+        <div id="body-dec-mood" style="display: none; padding: 0 1.5rem 1.5rem 1.5rem; border-top: 1px solid var(--border); background: var(--cream-pale);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+            <div>
+              <h5 style="color: var(--rose); font-weight: 700; margin-bottom: 0.4rem;">👩 Her Perspective (What she feels)</h5>
+              <p style="font-size: 0.85rem; color: var(--charcoal); line-height: 1.5; margin: 0;">Hormonal crashes (progesterone and estrogen drops during PMS) combined with high PCOD cortisol (stress hormone) create sudden chemical changes in her brain. She may feel anxious, highly emotional, insecure, or cry without a specific reason.</p>
+            </div>
+            <div>
+              <h5 style="color: var(--plum); font-weight: 700; margin-bottom: 0.4rem;">🙋‍♂️ How to Care, Console & Treat Her</h5>
+              <ul style="font-size: 0.85rem; color: var(--charcoal); padding-left: 1.2rem; line-height: 1.5; display: flex; flex-direction: column; gap: 0.3rem; margin: 0;">
+                <li><strong>Console:</strong> Never tell her "you are overreacting" or ask "is it your period?" Listen without offering immediate solutions or corrections. Reassure her: "I'm right here with you. What do you need?"</li>
+                <li><strong>Treat & Cure:</strong> Keep caffeine levels low (it triggers anxiety spikes). Offer her a square of 70%+ dark chocolate to promote endorphin release.</li>
+                <li><strong>Comfort:</strong> Help her with household chores to reduce her stress. Encourage her to practice 2 minutes of the **4-7-8 Breathing Exercise** with you.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ITEM 3: BLOATING & FATIGUE -->
+      <div class="accordion-item" style="background: white; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow);">
+        <button onclick="toggleAccordion('dec-fatigue')" style="width: 100%; text-align: left; padding: 1.25rem 1.5rem; background: none; border: none; font-size: 1.1rem; font-weight: 600; color: var(--plum); display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          <span style="display: flex; align-items: center; gap: 0.75rem;"><span>🎈</span> Severe Bloating, Water Retention & Exhaustion</span>
+          <span id="icon-dec-fatigue" style="font-size: 1.2rem; transition: transform 0.2s;">+</span>
+        </button>
+        <div id="body-dec-fatigue" style="display: none; padding: 0 1.5rem 1.5rem 1.5rem; border-top: 1px solid var(--border); background: var(--cream-pale);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+            <div>
+              <h5 style="color: var(--rose); font-weight: 700; margin-bottom: 0.4rem;">👩 Her Perspective (What she feels)</h5>
+              <p style="font-size: 0.85rem; color: var(--charcoal); line-height: 1.5; margin: 0;">Progesterone fluctuations cause the body to retain fluids and slow down digestion, leading to heavy, painful stomach tightness and gas. Chronic low-grade inflammation in PCOD causes energy crashes that feel like full-body exhaustion.</p>
+            </div>
+            <div>
+              <h5 style="color: var(--plum); font-weight: 700; margin-bottom: 0.4rem;">🙋‍♂️ How to Care, Console & Treat Her</h5>
+              <ul style="font-size: 0.85rem; color: var(--charcoal); padding-left: 1.2rem; line-height: 1.5; display: flex; flex-direction: column; gap: 0.3rem; margin: 0;">
+                <li><strong>Console:</strong> Assist her with physically demanding tasks. Do not push her to go out or execute plans if she says she is exhausted. Let her take naps.</li>
+                <li><strong>Treat & Cure:</strong> Boil 1 teaspoon of fennel seeds (Saunf) in a cup of water, strain and serve. It is a natural digestive spasmolytic that deflates gas bloating.</li>
+                <li><strong>Comfort:</strong> Avoid serving highly salty foods for dinner (salt worsens water retention). Help her sit in **Vajrasana (Thunderbolt)** posture after meals.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ITEM 4: HAIR & SKIN -->
+      <div class="accordion-item" style="background: white; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow);">
+        <button onclick="toggleAccordion('dec-skin')" style="width: 100%; text-align: left; padding: 1.25rem 1.5rem; background: none; border: none; font-size: 1.1rem; font-weight: 600; color: var(--plum); display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          <span style="display: flex; align-items: center; gap: 0.75rem;"><span>🌾</span> Facial Hair (Hirsutism), Acne & Insecurities</span>
+          <span id="icon-dec-skin" style="font-size: 1.2rem; transition: transform 0.2s;">+</span>
+        </button>
+        <div id="body-dec-skin" style="display: none; padding: 0 1.5rem 1.5rem 1.5rem; border-top: 1px solid var(--border); background: var(--cream-pale);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+            <div>
+              <h5 style="color: var(--rose); font-weight: 700; margin-bottom: 0.4rem;">👩 Her Perspective (What she feels)</h5>
+              <p style="font-size: 0.85rem; color: var(--charcoal); line-height: 1.5; margin: 0;">Ovarian cysts produce high testosterone/androgens (male hormones). This causes stubborn cystic acne breakouts along her jawline, hair thinning on top, and unwanted dark hair growth on her chin, face, or chest. It causes huge anxiety about her body image.</p>
+            </div>
+            <div>
+              <h5 style="color: var(--plum); font-weight: 700; margin-bottom: 0.4rem;">🙋‍♂️ How to Care, Console & Treat Her</h5>
+              <ul style="font-size: 0.85rem; color: var(--charcoal); padding-left: 1.2rem; line-height: 1.5; display: flex; flex-direction: column; gap: 0.3rem; margin: 0;">
+                <li><strong>Console:</strong> Never point out a breakout, chin hair, or facial blemish. Reassure her of her beauty and show physical affection. Tell her: "You look beautiful to me, always."</li>
+                <li><strong>Treat & Cure:</strong> Serve her 2 cups of hot **Spearmint tea** daily. Spearmint is clinically proven to lower free testosterone levels in women.</li>
+                <li><strong>Comfort:</strong> Prepare a soothing facial mask (e.g. sandalwood or aloe vera paste) or purchase clean, hormone-safe skincare products for her.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ITEM 5: SUGAR CRAVINGS -->
+      <div class="accordion-item" style="background: white; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow);">
+        <button onclick="toggleAccordion('dec-cravings')" style="width: 100%; text-align: left; padding: 1.25rem 1.5rem; background: none; border: none; font-size: 1.1rem; font-weight: 600; color: var(--plum); display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          <span style="display: flex; align-items: center; gap: 0.75rem;"><span>🍩</span> Intense Sugar Cravings & Insulin Resistance</span>
+          <span id="icon-dec-cravings" style="font-size: 1.2rem; transition: transform 0.2s;">+</span>
+        </button>
+        <div id="body-dec-cravings" style="display: none; padding: 0 1.5rem 1.5rem 1.5rem; border-top: 1px solid var(--border); background: var(--cream-pale);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+            <div>
+              <h5 style="color: var(--rose); font-weight: 700; margin-bottom: 0.4rem;">👩 Her Perspective (What she feels)</h5>
+              <p style="font-size: 0.85rem; color: var(--charcoal); line-height: 1.5; margin: 0;">PCOD cells resist insulin, meaning they struggle to absorb glucose from the blood. This leaves her body cells starving for fuel, sending urgent, uncontrollable hunger signals to her brain demanding sugar, sweets, or carbs.</p>
+            </div>
+            <div>
+              <h5 style="color: var(--plum); font-weight: 700; margin-bottom: 0.4rem;">🙋‍♂️ How to Care, Console & Treat Her</h5>
+              <ul style="font-size: 0.85rem; color: var(--charcoal); padding-left: 1.2rem; line-height: 1.5; display: flex; flex-direction: column; gap: 0.3rem; margin: 0;">
+                <li><strong>Console:</strong> Do not scold or judge her for wanting sweets. Help her manage them by keeping trigger foods out of the house. Don't eat white-sugar desserts in front of her.</li>
+                <li><strong>Treat & Cure:</strong> Boil half a teaspoon of cinnamon powder in warm morning water. Cinnamon is excellent at reducing insulin resistance.</li>
+                <li><strong>Comfort:</strong> Prepare healthy alternative snacks: fresh berries, roasted pumpkin seeds, or warm ragi porridge sweetened with natural jaggery.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleAccordion(id) {
+  const el = document.getElementById(`body-${id}`);
+  const icon = document.getElementById(`icon-${id}`);
+  if (el) {
+    const isHidden = el.style.display === 'none';
+    el.style.display = isHidden ? 'block' : 'none';
+    if (icon) icon.innerText = isHidden ? '−' : '+';
+  }
+}
+window.toggleAccordion = toggleAccordion;
+
+function togglePartnerCheck(checkbox) {
+  const label = checkbox.closest('.partner-chk-lbl');
+  if (label) {
+    if (checkbox.checked) {
+      label.style.background = 'var(--rose-pale)';
+      label.style.borderColor = 'var(--rose-light)';
+    } else {
+      label.style.background = 'var(--cream)';
+      label.style.borderColor = 'var(--border)';
+    }
+  }
+}
+window.togglePartnerCheck = togglePartnerCheck;
 
 
 

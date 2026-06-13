@@ -6,7 +6,7 @@
   <title>Sakhi — Your Women's Health Companion</title>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="styles.css?v=5"/>
+  <link rel="stylesheet" href="styles.css?v=8"/>
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json"/>
   <!-- Google OAuth Services Client -->
@@ -53,7 +53,7 @@
   <div id="habits-overlay" class="habits-overlay-backdrop" style="display: none;">
     <div class="habits-card">
       <div class="auth-header" style="position: relative;">
-        <button onclick="document.getElementById('habits-overlay').style.display = 'none'" style="position: absolute; top: -5px; right: -5px; background: none; border: none; font-size: 1.8rem; cursor: pointer; color: var(--soft); line-height: 1; padding: 0.2rem;">×</button>
+        <button onclick="document.getElementById('habits-overlay').style.display = 'none'; localStorage.setItem('sakhi_habits_dismissed', 'true');" style="position: absolute; top: -5px; right: -5px; background: none; border: none; font-size: 1.8rem; cursor: pointer; color: var(--soft); line-height: 1; padding: 0.2rem;">×</button>
         <h2>Customize Your Companion 🌸</h2>
         <p>Tell us about your routines to automatically personalize your food, activity, and Ayurvedic checklist.</p>
       </div>
@@ -1019,6 +1019,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>

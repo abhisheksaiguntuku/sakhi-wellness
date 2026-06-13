@@ -26,6 +26,13 @@ app.use(async (req, res, next) => {
   next();
 });
 
+// Serve service worker without cache
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, '..', 'public', 'sw.js'));
+});
+
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -214,11 +221,14 @@ app.get('/api/doctor/find', async (req, res) => {
 // 2. PERSONALIZED GROQ CLOUD CHATBOT ROUTING
 app.post('/api/doubt', async (req, res) => {
   const user = getAuthUser(req);
-  const { question } = req.body;
+  const { question, isHimMode } = req.body;
   
   if (!question) return res.status(400).json({ error: "question is required" });
   
   const habits = await db.getUserHabits(user) || { wakeTime: "06:30", sleepTime: "22:30", meals: "3", foodPreference: "veg", age: "23" };
+  const gender = await db.getUserGender(user);
+  const isMale = (gender === 'male') || (isHimMode === true);
+  
   const wakeHr = parseInt(habits.wakeTime.split(":")[0]) || 6;
   const sleepHr = parseInt(habits.sleepTime.split(":")[0]) || 22;
   const mealsCount = parseInt(habits.meals) || 3;
@@ -228,6 +238,24 @@ app.post('/api/doubt', async (req, res) => {
 
   if (GROQ_API_KEY && GROQ_API_KEY !== 'YOUR_GROQ_API_KEY_HERE') {
     try {
+      const systemContent = isMale 
+        ? `You are Sakhi, a warm, supportive, and deeply empathetic AI women's health advisor. This user is a Male Support Partner (husband/boyfriend/partner) who wants to learn how to support his partner (e.g. Priya) managing PCOD/PCOS. Explain simple non-medical advice, natural remedies, and behaviors in a partner's perspective (how to console her, make hot water bags, brew spearmint/ginger teas, and handle mood swings). Speak directly to him as a male partner supporting her wellness. NEVER address him as "sister" or a female user. Keep responses empathetic, practical, and action-oriented.
+Style Instructions:
+- Dynamically vary your greetings! Mix it up: "Hey support partner! 🙋‍♂️", "Hello partner, I'm here to help you support her", "Hi there, thank you for supporting her! 🌸", "Hello! Let's talk about how to console her today."
+- NEVER output generic boilerplate structures. Every response should feel fresh and personalized.`
+        : `You are Sakhi, a warm, conversational, and deeply empathetic AI women's health sister. Explain simply like a loving older sister. Avoid medical prescribing, recommending natural/ayurvedic habits first.
+User profile:
+- Nickname: ${nickname}
+- Age: ${habits.age} years old
+- Wakes up at: ${habits.wakeTime}
+- Sleeps at: ${habits.sleepTime}
+- Eat frequency: ${mealsCount} meals a day (${habits.foodPreference})
+
+Style Instructions:
+- Dynamically vary your greetings! Do not always start with "Namaste". Mix it up: "Hey ${nickname}! 🌸", "Namaste, my dear ${nickname}", "Hello sweet ${nickname}", "Oh ${nickname}, I hear you!", "Hi ${nickname}, I'm here for you! 💛".
+- NEVER output generic boilerplate structures or repetitive skeletons. Every message should feel freshly written, natural, and friendly.
+- Directly weave exact times for suggestions matching their waking time of ${habits.wakeTime} and sleeping time of ${habits.sleepTime}. Acknowledge details warmly and end with a positive word of hope.`;
+
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -239,18 +267,7 @@ app.post('/api/doubt', async (req, res) => {
           messages: [
             {
               role: 'system',
-              content: `You are Sakhi, a warm, conversational, and deeply empathetic AI women's health sister. Explain simply like a loving older sister. Avoid medical prescribing, recommending natural/ayurvedic habits first.
-User profile:
-- Nickname: ${nickname}
-- Age: ${habits.age} years old
-- Wakes up at: ${habits.wakeTime}
-- Sleeps at: ${habits.sleepTime}
-- Eat frequency: ${mealsCount} meals a day (${habits.foodPreference})
-
-Style Instructions:
-- Dynamically vary your greetings! Do not always start with "Namaste". Mix it up: "Hey ${nickname}! 🌸", "Namaste, my dear ${nickname}", "Hello sweet ${nickname}", "Oh ${nickname}, I hear you!", "Hi ${nickname}, I'm here for you! 💛".
-- NEVER output generic boilerplate structures or repetitive skeletons. Every message should feel freshly written, natural, and friendly.
-- Directly weave exact times for suggestions matching their waking time of ${habits.wakeTime} and sleeping time of ${habits.sleepTime}. Acknowledge details warmly and end with a positive word of hope.`
+              content: systemContent
             },
             { role: 'user', content: question }
           ],
@@ -267,42 +284,64 @@ Style Instructions:
   }
 
   // Fallback Dynamic NLP generator if Groq API keys are not active/configured
-  const greetings = [
-    `Hey ${nickname}! 🌸`,
-    `Namaste, my dear ${nickname}! 🙏`,
-    `Oh ${nickname}, I am here to listen. 💛`,
-    `Hello sweet ${nickname}! 🌸`,
-    `Hi ${nickname}, let's chat about this. 🌿`
-  ];
+  let greetings = [];
+  if (isMale) {
+    greetings = [
+      `Hey support partner! 🙋‍♂️`,
+      `Namaste, partner! 🙏`,
+      `Hello there, thank you for supporting her! 🌸`,
+      `Hi there, let's talk about how to comfort her. 🌿`
+    ];
+  } else {
+    greetings = [
+      `Hey ${nickname}! 🌸`,
+      `Namaste, my dear ${nickname}! 🙏`,
+      `Oh ${nickname}, I am here to listen. 💛`,
+      `Hello sweet ${nickname}! 🌸`,
+      `Hi ${nickname}, let's chat about this. 🌿`
+    ];
+  }
   
   const selectedGreeting = greetings[Math.floor(Math.random() * greetings.length)];
   let reply = "";
   const query = question.toLowerCase();
 
-  if (query.includes("medicine") || query.includes("pill") || query.includes("tablet")) {
-    const responses = [
-      `${selectedGreeting} I understand you're asking about prescription pills, but as your wellness sister, I don't recommend pharmaceuticals or drug dosages. For a natural way to lower cortisol, try drinking warm milk with a pinch of Ashwagandha around ${sleepHr - 1}:30 PM (before your sleep at ${habits.sleepTime}). Let's start with natural adaptogens!`,
-      `${selectedGreeting} It's always best to be gentle with our bodies. I can't advise on chemical medicines, but if you're feeling stressed, taking Ashwagandha with warm milk at night (around ${sleepHr - 1}:30 PM) is a wonderful Ayurvedic ritual that matches your sleep schedule. Would you like to try that?`
-    ];
-    reply = responses[Math.floor(Math.random() * responses.length)];
-  } else if (query.includes("food") || query.includes("eat") || query.includes("diet")) {
-    const responses = [
-      `${selectedGreeting} Let's tailor your meals! Since you prefer a ${habits.foodPreference} diet, try a fiber-filled breakfast (like sprouts) at ${wakeHr + 1}:00 AM (1 hour after waking). Have a leafy lunch at 1 PM, and a light dinner around ${sleepHr - 3}:00 PM to avoid insulin spikes before your bedtime.`,
-      `${selectedGreeting} Food is medicine! For your ${habits.foodPreference} preference, stabilizing glucose is key. Try your morning meal around ${wakeHr + 1}:00 AM, dal and fresh greens at lunch, and lock in your light dinner by ${sleepHr - 3}:00 PM. Cut out white sugar completely to protect your ovaries!`
-    ];
-    reply = responses[Math.floor(Math.random() * responses.length)];
-  } else if (query.includes("exercise") || query.includes("workout") || query.includes("walk")) {
-    const responses = [
-      `${selectedGreeting} Moving is wonderful for PCOD! Since you wake up at ${habits.wakeTime}, do a gentle 10-minute stretching flow around ${wakeHr}:30 AM. Later, go for a peaceful 30-minute brisk walk at 4:30 PM. It works wonders for insulin sensitivity.`,
-      `${selectedGreeting} Let's design a quick routine. Start with a light butterfly stretch at ${wakeHr}:45 AM, and wind down in the evening with a 30-minute walk before sunset. Keeping it low-impact lowers your cortisol levels!`
-    ];
-    reply = responses[Math.floor(Math.random() * responses.length)];
+  if (isMale) {
+    if (query.includes("medicine") || query.includes("pill") || query.includes("tablet")) {
+      reply = `${selectedGreeting} I understand you're asking about prescription pills for her, but as a wellness advisor, I don't recommend pharmaceutical drug dosages. For a natural way to support her and lower her stress, prepare warm milk with a pinch of Ashwagandha for her around ${sleepHr - 1}:30 PM (before her sleep). Let's support her with natural adaptogens first!`;
+    } else if (query.includes("food") || query.includes("eat") || query.includes("diet")) {
+      reply = `${selectedGreeting} To support her PCOD diet, you can cook a low-GI breakfast for her (like sprouts or warm oatmeal) at ${wakeHr + 1}:00 AM. Help her avoid white sugar in meals and replace it with organic jaggery or cinnamon. Stabilizing her glucose is key to reducing ovaries pressure!`;
+    } else if (query.includes("exercise") || query.includes("workout") || query.includes("walk")) {
+      reply = `${selectedGreeting} Exercise works wonders for PCOD insulin sensitivity. Since she wakes up at ${habits.wakeTime}, encourage a gentle stretch flow around ${wakeHr}:30 AM, or plan a pleasant 30-minute evening walk together around 4:30 PM. Walking together is a great way to relieve stress!`;
+    } else {
+      reply = `${selectedGreeting} Supporting her wellness starts with small daily habits. You can prepare a cup of warm Spearmint tea for her in the evening (around 5:30 PM) to help reduce ovarian stress and testosterone levels. Listening to her warmly is the best medicine!`;
+    }
   } else {
-    const responses = [
-      `${selectedGreeting} Balancing your hormones is about aligning with your body's rhythm. Since you sleep at ${habits.sleepTime}, sipping warm spearmint tea in the evening (around 5:30 PM) is a lovely ritual to reduce androgens and skin breakouts.`,
-      `${selectedGreeting} I'm thinking about you. A simple Ayurvedic step is to brew warm spearmint tea after breakfast. It aligns beautifully with your waking time of ${habits.wakeTime} and helps reduce androgen-induced facial hair. You've got this!`
-    ];
-    reply = responses[Math.floor(Math.random() * responses.length)];
+    if (query.includes("medicine") || query.includes("pill") || query.includes("tablet")) {
+      const responses = [
+        `${selectedGreeting} I understand you're asking about prescription pills, but as your wellness sister, I don't recommend pharmaceuticals or drug dosages. For a natural way to lower cortisol, try drinking warm milk with a pinch of Ashwagandha around ${sleepHr - 1}:30 PM (before your sleep at ${habits.sleepTime}). Let's start with natural adaptogens!`,
+        `${selectedGreeting} It's always best to be gentle with our bodies. I can't advise on chemical medicines, but if you're feeling stressed, taking Ashwagandha with warm milk at night (around ${sleepHr - 1}:30 PM) is a wonderful Ayurvedic ritual that matches your sleep schedule. Would you like to try that?`
+      ];
+      reply = responses[Math.floor(Math.random() * responses.length)];
+    } else if (query.includes("food") || query.includes("eat") || query.includes("diet")) {
+      const responses = [
+        `${selectedGreeting} Let's tailor your meals! Since you prefer a ${habits.foodPreference} diet, try a fiber-filled breakfast (like sprouts) at ${wakeHr + 1}:00 AM (1 hour after waking). Have a leafy lunch at 1 PM, and a light dinner around ${sleepHr - 3}:00 PM to avoid insulin spikes before your bedtime.`,
+        `${selectedGreeting} Food is medicine! For your ${habits.foodPreference} preference, stabilizing glucose is key. Try your morning meal around ${wakeHr + 1}:00 AM, dal and fresh greens at lunch, and lock in your light dinner by ${sleepHr - 3}:00 PM. Cut out white sugar completely to protect your ovaries!`
+      ];
+      reply = responses[Math.floor(Math.random() * responses.length)];
+    } else if (query.includes("exercise") || query.includes("workout") || query.includes("walk")) {
+      const responses = [
+        `${selectedGreeting} Moving is wonderful for PCOD! Since you wake up at ${habits.wakeTime}, do a gentle 10-minute stretching flow around ${wakeHr}:30 AM. Later, go for a peaceful 30-minute brisk walk at 4:30 PM. It works wonders for insulin sensitivity.`,
+        `${selectedGreeting} Let's design a quick routine. Start with a light butterfly stretch at ${wakeHr}:45 AM, and wind down in the evening with a 30-minute walk before sunset. Keeping it low-impact lowers your cortisol levels!`
+      ];
+      reply = responses[Math.floor(Math.random() * responses.length)];
+    } else {
+      const responses = [
+        `${selectedGreeting} Balancing your hormones is about aligning with your body's rhythm. Since you sleep at ${habits.sleepTime}, sipping warm spearmint tea in the evening (around 5:30 PM) is a lovely ritual to reduce androgens and skin breakouts.`,
+        `${selectedGreeting} I'm thinking about you. A simple Ayurvedic step is to brew warm spearmint tea after breakfast. It aligns beautifully with your waking time of ${habits.wakeTime} and helps reduce androgen-induced facial hair. You've got this!`
+      ];
+      reply = responses[Math.floor(Math.random() * responses.length)];
+    }
   }
 
   res.json({ reply });

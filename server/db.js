@@ -330,6 +330,20 @@ async function relateToPost(postId) {
   }
 }
 
+async function getUserGender(username) {
+  if (useMongo) {
+    try {
+      const user = await UserModel.findOne({ username });
+      return user ? user.gender : 'female';
+    } catch (err) {
+      return 'female';
+    }
+  } else {
+    const db = readDb();
+    return db.users[username] ? db.users[username].gender : 'female';
+  }
+}
+
 module.exports = {
   connectDb,
   registerUser,
@@ -339,6 +353,7 @@ module.exports = {
   saveSession,
   getUserHabits,
   saveUserHabits,
+  getUserGender,
   getCommunity,
   addCommunityPost,
   relateToPost
