@@ -218,6 +218,9 @@ app.get('/api/doctor/find', async (req, res) => {
   res.json({ doctors });
 });
 
+// In-memory conversation history storage (maps user token/username to an array of messages)
+const chatHistories = new Map();
+
 // 2. PERSONALIZED GROQ CLOUD CHATBOT ROUTING
 app.post('/api/doubt', async (req, res) => {
   const user = getAuthUser(req);
@@ -235,6 +238,14 @@ app.post('/api/doubt', async (req, res) => {
 
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
   const nickname = habits.nickname || 'sister';
+
+  // Get or initialize user conversation history
+  let userHistory = chatHistories.get(user) || [];
+  
+  // Cap history at last 10 messages (5 user turns and 5 bot turns) to prevent context bloat
+  if (userHistory.length > 10) {
+    userHistory = userHistory.slice(-10);
+  }
 
   if (GROQ_API_KEY && GROQ_API_KEY !== 'YOUR_GROQ_API_KEY_HERE') {
     try {
@@ -256,6 +267,9 @@ Style Instructions:
 - NEVER output generic boilerplate structures or repetitive skeletons. Every message should feel freshly written, natural, and friendly.
 - Directly weave exact times for suggestions matching their waking time of ${habits.wakeTime} and sleeping time of ${habits.sleepTime}. Acknowledge details warmly and end with a positive word of hope.`;
 
+      // Append new user message to history
+      userHistory.push({ role: 'user', content: question });
+
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -265,18 +279,21 @@ Style Instructions:
         body: JSON.stringify({
           model: 'llama3-8b-8192',
           messages: [
-            {
-              role: 'system',
-              content: systemContent
-            },
-            { role: 'user', content: question }
+            { role: 'system', content: systemContent },
+            ...userHistory
           ],
           temperature: 0.8
         })
       });
       const data = await response.json();
       if (data.choices && data.choices[0]) {
-        return res.json({ reply: data.choices[0].message.content });
+        const replyText = data.choices[0].message.content;
+        
+        // Append bot reply to history and save it
+        userHistory.push({ role: 'assistant', content: replyText });
+        chatHistories.set(user, userHistory);
+        
+        return res.json({ reply: replyText });
       }
     } catch (err) {
       console.error("Groq API completing error:", err);

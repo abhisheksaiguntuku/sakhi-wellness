@@ -2163,25 +2163,31 @@ function openProfileSettings() {
   const sleepGroup = document.getElementById('onboard-sleep').closest('.form-group');
   const mealsGroup = document.getElementById('onboard-meals').closest('.form-group');
   const prefGroup = document.getElementById('onboard-preference').closest('.form-group');
+  const ageGroup = document.getElementById('onboard-age').closest('.form-group');
+  const nickInput = document.getElementById('onboard-nickname');
   
   if (isHim) {
     if (headerTitle) headerTitle.innerText = "Customize Support Profile 🙋‍♂️";
     if (headerDesc) headerDesc.innerText = "Personalize your support nickname and location details.";
     if (nicknameLabel) nicknameLabel.innerText = "Your Name / Nickname";
+    if (nickInput) nickInput.placeholder = "e.g. Abhishek, Raj, Amit...";
     
     if (wakeGroup) wakeGroup.style.display = 'none';
     if (sleepGroup) sleepGroup.style.display = 'none';
     if (mealsGroup) mealsGroup.style.display = 'none';
     if (prefGroup) prefGroup.style.display = 'none';
+    if (ageGroup) ageGroup.style.display = 'none';
   } else {
     if (headerTitle) headerTitle.innerText = "Customize Your Companion 🌸";
     if (headerDesc) headerDesc.innerText = "Tell us about your routines to automatically personalize your food, activity, and Ayurvedic checklist.";
     if (nicknameLabel) nicknameLabel.innerText = "What should we call you? (Your Nickname)";
+    if (nickInput) nickInput.placeholder = "e.g. Priya, Siya, Ananya...";
     
     if (wakeGroup) wakeGroup.style.display = 'block';
     if (sleepGroup) sleepGroup.style.display = 'block';
     if (mealsGroup) mealsGroup.style.display = 'block';
     if (prefGroup) prefGroup.style.display = 'block';
+    if (ageGroup) ageGroup.style.display = 'block';
   }
 
   // Pre-fill fields
